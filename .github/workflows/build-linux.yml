@@ -1,0 +1,265 @@
+name: Nightly Linux Build
+
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch: 
+
+permissions:
+  contents: write
+
+jobs:
+  check-upstream:
+    name: Check for new upstream commits
+    runs-on: ubuntu-latest
+    outputs:
+      should_build: ${{ steps.compare.outputs.should_build }}
+      upstream_sha: ${{ steps.upstream.outputs.sha }}
+      short_sha: ${{ steps.upstream.outputs.short_sha }}
+      date: ${{ steps.upstream.outputs.date }}
+    steps:
+      - name: Get latest upstream SHA
+        id: upstream
+        run: |
+          SHA=$(curl -fsSL \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/LadybirdBrowser/ladybird/commits/master" \
+            | jq -r '.sha')
+          SHORT_SHA="${SHA:0:7}"
+          DATE=$(date -u +%Y%m%d)
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          echo "short_sha=$SHORT_SHA" >> "$GITHUB_OUTPUT"
+          echo "date=$DATE" >> "$GITHUB_OUTPUT"
+          echo "Upstream SHA: $SHA"
+
+      - name: Get last built SHA from releases
+        id: last_built
+        run: |
+          LAST_TAG=$(curl -fsSL \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/latest" \
+            | jq -r '.tag_name // "none"')
+          echo "last_tag=$LAST_TAG" >> "$GITHUB_OUTPUT"
+          echo "Last built tag: $LAST_TAG"
+
+      - name: Compare SHAs
+        id: compare
+        run: |
+          UPSTREAM_SHA="${{ steps.upstream.outputs.sha }}"
+          LAST_TAG="${{ steps.last_built.outputs.last_tag }}"
+
+          if [[ "$LAST_TAG" == "none" || "$LAST_TAG" == "null" ]]; then
+            echo "No previous release found. Will build."
+            echo "should_build=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # extract SHA embedded in tag name like: nightly-yyyymmdd-shortsha
+          LAST_SHORT="${LAST_TAG##*-}"
+          CURRENT_SHORT="${UPSTREAM_SHA:0:7}"
+
+          if [[ "$LAST_SHORT" == "$CURRENT_SHORT" ]]; then
+            echo "No new commits since last build ($CURRENT_SHORT). Skipping."
+            echo "should_build=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "New commits detected ($LAST_SHORT -> $CURRENT_SHORT). Will build."
+            echo "should_build=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  build:
+    name: Build Ladybird (Linux x86_64)
+    needs: check-upstream
+    if: needs.check-upstream.outputs.should_build == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+
+    env:
+      CC: clang-21
+      CXX: clang++-21
+      UPSTREAM_SHA: ${{ needs.check-upstream.outputs.upstream_sha }}
+      SHORT_SHA: ${{ needs.check-upstream.outputs.short_sha }}
+      BUILD_DATE: ${{ needs.check-upstream.outputs.date }}
+
+    steps:
+      - name: Install system dependencies
+        run: |
+          set -euo pipefail
+
+          # base deps for ladybird build from ladybird build instructions 
+          sudo apt-get update -y
+          sudo apt-get install -y \
+            autoconf autoconf-archive automake build-essential ccache cmake curl \
+            fonts-liberation2 git libdrm-dev libgl1-mesa-dev libtool nasm \
+            ninja-build pkg-config python3-venv \
+            qt6-base-dev qt6-tools-dev-tools qt6-wayland \
+            libpulse-dev \
+            tar unzip zip jq wget lsb-release
+
+          # cmake 3.30+ from kitware as ubuntu-24.04 ships 3.28 which is too old
+          wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null \
+            | gpg --dearmor - \
+            | sudo tee /usr/share/keyrings/kitware-archive-keyring.gpg >/dev/null
+          echo "deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ $(lsb_release -sc) main" \
+            | sudo tee /etc/apt/sources.list.d/kitware.list
+          sudo apt-get update -y
+          sudo apt-get install -y cmake
+
+          # use clang21 from llvm repo
+          sudo wget -O /usr/share/keyrings/llvm-snapshot.gpg.key \
+            https://apt.llvm.org/llvm-snapshot.gpg.key
+          echo "deb [signed-by=/usr/share/keyrings/llvm-snapshot.gpg.key] https://apt.llvm.org/$(lsb_release -sc)/ llvm-toolchain-$(lsb_release -sc)-21 main" \
+            | sudo tee -a /etc/apt/sources.list.d/llvm.list
+          sudo apt-get update -y
+          sudo apt-get install -y clang-21 lld-21
+
+          # rust toolchain as ladybird has some subcomponents on rust
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+
+          # print versions for ci log
+          cmake --version
+          clang-21 --version
+          ninja --version
+
+      - name: Clone Ladybird at exact upstream SHA
+        run: |
+          git clone https://github.com/LadybirdBrowser/ladybird.git ladybird
+          cd ladybird
+          git checkout "$UPSTREAM_SHA"
+          echo "Checked out: $(git log -1 --oneline)"
+
+      - name: Cache vcpkg downloads
+        uses: actions/cache@v4
+        with:
+          path: |
+            ladybird/Build/release/vcpkg_installed
+            ladybird/Toolchain/Tarballs/vcpkg
+          key: vcpkg-linux-x64-${{ hashFiles('ladybird/vcpkg.json') }}
+          restore-keys: |
+            vcpkg-linux-x64-
+
+      - name: Cache ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ccache
+          key: ccache-linux-x64-${{ env.UPSTREAM_SHA }}
+          restore-keys: |
+            ccache-linux-x64-
+
+      - name: Configure ccache
+        run: |
+          ccache --max-size=5G
+          ccache --zero-stats
+
+      - name: Build Ladybird
+        working-directory: ladybird
+        run: |
+          set -euo pipefail
+
+          # use cmake preset directly as ladybird.py build does internally
+          # LAGOM_LINK_POOL_SIZE=2 prevents out of memory during linking on github runner  7GB of ram
+          cmake --preset default \
+            -DLAGOM_LINK_POOL_SIZE=2 \
+            -DCMAKE_C_COMPILER=clang-21 \
+            -DCMAKE_CXX_COMPILER=clang++-21
+
+          cmake --build --preset default
+
+      - name: Show ccache stats
+        run: ccache --show-stats
+
+      - name: Verify binary exists
+        working-directory: ladybird
+        run: |
+          test -f Build/release/bin/Ladybird || { echo "ERROR: Ladybird binary not found!"; exit 1; }
+          echo "Binary found:"
+          ls -lh Build/release/bin/Ladybird
+          ldd Build/release/bin/Ladybird | head -20
+
+      - name: Package release tarball
+        working-directory: ladybird
+        run: |
+          set -euo pipefail
+
+          RELEASE_NAME="ladybird-nightly-linux-x86_64-${BUILD_DATE}-${SHORT_SHA}"
+          STAGING="/tmp/${RELEASE_NAME}"
+          mkdir -p "$STAGING/bin" "$STAGING/lib" "$STAGING/res"
+
+          # main browser binaries (multi-process) 
+          for BIN in Ladybird WebContent RequestServer ImageDecoder WebWorker WebDriver; do
+            SRC="Build/release/bin/$BIN"
+            if [[ -f "$SRC" ]]; then
+              cp "$SRC" "$STAGING/bin/"
+            else
+              echo "WARNING: $BIN not found, skipping"
+            fi
+          done
+
+          # vcpkg-built shared libraries
+          if [[ -d Build/release/vcpkg_installed/x64-linux-dynamic/lib ]]; then
+            cp -r Build/release/vcpkg_installed/x64-linux-dynamic/lib/. "$STAGING/lib/"
+          fi
+
+          # additional libs from build output
+          if [[ -d Build/release/lib ]]; then
+            cp -r Build/release/lib/. "$STAGING/lib/"
+          fi
+
+          # resource files like fonts icons themes required at runtime
+          if [[ -d Build/release/share/ladybird ]]; then
+            cp -r Build/release/share/ladybird/. "$STAGING/res/"
+          elif [[ -d Base/res ]]; then
+            cp -r Base/res/. "$STAGING/res/"
+          fi
+
+          # write build metadata
+          cat > "$STAGING/BUILD_INFO" <<EOF
+          ladybird-nightly
+          Date:     ${BUILD_DATE}
+          Commit:   ${UPSTREAM_SHA}
+          Short:    ${SHORT_SHA}
+          Built by: https://github.com/${{ github.repository }}
+          EOF
+
+          # baking a launcher wrapper that sets LD_LIBRARY_PATH
+          cat > "$STAGING/run-ladybird.sh" <<'SCRIPT'
+          #!/usr/bin/env bash
+          SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+          export LD_LIBRARY_PATH="$SCRIPT_DIR/lib:$LD_LIBRARY_PATH"
+          exec "$SCRIPT_DIR/bin/Ladybird" "$@"
+          SCRIPT
+          chmod +x "$STAGING/run-ladybird.sh"
+
+          # compress
+          cd /tmp
+          tar -czf "${RELEASE_NAME}.tar.gz" "${RELEASE_NAME}"
+          echo "TARBALL=/tmp/${RELEASE_NAME}.tar.gz" >> "$GITHUB_ENV"
+          echo "RELEASE_NAME=${RELEASE_NAME}" >> "$GITHUB_ENV"
+          ls -lh "${RELEASE_NAME}.tar.gz"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="nightly-${BUILD_DATE}-${SHORT_SHA}"
+
+          cat > /tmp/release-notes.md << EOF
+          **Ladybird nightly build**
+
+          - Upstream commit: [\`${SHORT_SHA}\`](https://github.com/LadybirdBrowser/ladybird/commit/${UPSTREAM_SHA})
+          - Built: ${BUILD_DATE}
+          - Platform: Linux x86_64
+
+          **Install:**
+          \`\`\`bash
+          curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/main/install.sh | bash
+          \`\`\`
+
+          > Warning Unofficial nightly build. Ladybird is pre-alpha software.
+          EOF
+
+          gh release create "$TAG" \
+            --repo "${{ github.repository }}" \
+            --title "Nightly ${BUILD_DATE} (${SHORT_SHA})" \
+            --notes-file /tmp/release-notes.md \
+            "${{ env.TARBALL }}"
