@@ -27,7 +27,7 @@ Then run:
 ladybird
 ```
 
---!>
+-->
 
 ## How it works
 
