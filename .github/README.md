@@ -3,26 +3,31 @@
 Automated nightly builds of [Ladybird Browser](https://github.com/LadybirdBrowser/ladybird) for Linux x86_64.
 
 > [!WARNING]
-> **Unofficial.** Not affiliated with the Ladybird project. Ladybird is pre-alpha software.
+> **Unofficial.** This is not affiliated with the Ladybird project in any way. Ladybird is pre-alpha software only suitable for developer use.
+>
+> Also, please don't use this repo's issue tab for reporting any bugs related to Ladybird do that on the official repo. https://github.com/LadybirdBrowser/ladybird
+>
+> Instead, you can report bugs related to the install script or contribute any fixes related to this repo.
 
-<--
+<!--
+
 ## Install
 
-```bash
+```sh
 curl -fsSL https://raw.githubusercontent.com/YOUR_USER/ladybird-nightly/main/install.sh | bash
 ```
 
 Custom install path:
-```bash
+```sh
 curl -fsSL https://raw.githubusercontent.com/YOUR_USER/ladybird-nightly/main/install.sh | bash -s -- --dir ~/.local/ladybird
 ```
 
 Then run:
-```bash
+```sh
 ladybird
 ```
 
--->
+--!>
 
 ## How it works
 
@@ -35,7 +40,7 @@ ladybird
 
 ## Runtime requirements (Linux)
 
-```bash
+```sh
 # Ubuntu/Debian
 sudo apt install qt6-base-dev
 
