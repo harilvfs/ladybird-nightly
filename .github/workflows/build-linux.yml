@@ -156,14 +156,12 @@ jobs:
         run: |
           set -euo pipefail
 
-          # use cmake preset directly as ladybird.py build does internally
-          # LAGOM_LINK_POOL_SIZE=2 prevents out of memory during linking on github runner  7GB of ram
-          cmake --preset default \
+          cmake --preset Release \
             -DLAGOM_LINK_POOL_SIZE=2 \
             -DCMAKE_C_COMPILER=clang-21 \
             -DCMAKE_CXX_COMPILER=clang++-21
 
-          cmake --build --preset default
+          cmake --build --preset Release
 
       - name: Show ccache stats
         run: ccache --show-stats
