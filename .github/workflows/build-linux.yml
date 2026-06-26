@@ -155,13 +155,7 @@ jobs:
         working-directory: ladybird
         run: |
           set -euo pipefail
-
-          cmake --preset Release \
-            -DLAGOM_LINK_POOL_SIZE=2 \
-            -DCMAKE_C_COMPILER=clang-21 \
-            -DCMAKE_CXX_COMPILER=clang++-21
-
-          cmake --build --preset Release
+          CC=clang-21 CXX=clang++-21 python3 Meta/ladybird.py build
 
       - name: Show ccache stats
         run: ccache --show-stats
