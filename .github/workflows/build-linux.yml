@@ -104,7 +104,6 @@ jobs:
           sudo apt-get update -y
           sudo apt-get install -y cmake
 
-          # use clang21 from llvm repo
           sudo wget -O /usr/share/keyrings/llvm-snapshot.gpg.key \
             https://apt.llvm.org/llvm-snapshot.gpg.key
           echo "deb [signed-by=/usr/share/keyrings/llvm-snapshot.gpg.key] https://apt.llvm.org/$(lsb_release -sc)/ llvm-toolchain-$(lsb_release -sc)-21 main" \
@@ -112,11 +111,9 @@ jobs:
           sudo apt-get update -y
           sudo apt-get install -y clang-21 lld-21
 
-          # rust toolchain as ladybird has some subcomponents on rust
           curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path
           echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
 
-          # print versions for ci log
           cmake --version
           clang-21 --version
           ninja --version
@@ -157,63 +154,27 @@ jobs:
           set -euo pipefail
           CC=clang-21 CXX=clang++-21 python3 Meta/ladybird.py build
 
-      - name: Show ccache stats
-        run: ccache --show-stats
-
-      - name: Verify binary exists
-        working-directory: ladybird
-        run: |
-          test -f Build/release/bin/Ladybird || { echo "ERROR: Ladybird binary not found!"; exit 1; }
-          echo "Binary found:"
-          ls -lh Build/release/bin/Ladybird
-          ldd Build/release/bin/Ladybird | head -20
-
-      - name: Package release tarball
+      - name: Install Ladybird to staging
         working-directory: ladybird
         run: |
           set -euo pipefail
-
           RELEASE_NAME="ladybird-nightly-linux-x86_64-${BUILD_DATE}-${SHORT_SHA}"
           STAGING="/tmp/${RELEASE_NAME}"
-          mkdir -p "$STAGING/bin" "$STAGING/lib" "$STAGING/res"
+          mkdir -p "$STAGING"
 
-          # main browser binaries (multi-process) 
-          for BIN in Ladybird WebContent RequestServer ImageDecoder WebWorker WebDriver; do
-            SRC="Build/release/bin/$BIN"
-            if [[ -f "$SRC" ]]; then
-              cp "$SRC" "$STAGING/bin/"
-            else
-              echo "WARNING: $BIN not found, skipping"
-            fi
-          done
+          cmake --install Build/release --prefix "$STAGING"
 
-          # vcpkg-built shared libraries
-          if [[ -d Build/release/vcpkg_installed/x64-linux-dynamic/lib ]]; then
-            cp -r Build/release/vcpkg_installed/x64-linux-dynamic/lib/. "$STAGING/lib/"
-          fi
+          echo "=== Installed files ==="
+          find "$STAGING" -type f | sort
 
-          # additional libs from build output
-          if [[ -d Build/release/lib ]]; then
-            cp -r Build/release/lib/. "$STAGING/lib/"
-          fi
+          echo "STAGING=$STAGING" >> "$GITHUB_ENV"
+          echo "RELEASE_NAME=$RELEASE_NAME" >> "$GITHUB_ENV"
 
-          # resource files like fonts icons themes required at runtime
-          if [[ -d Build/release/share/ladybird ]]; then
-            cp -r Build/release/share/ladybird/. "$STAGING/res/"
-          elif [[ -d Base/res ]]; then
-            cp -r Base/res/. "$STAGING/res/"
-          fi
+      - name: Package release tarball
+        run: |
+          set -euo pipefail
 
-          # write build metadata
-          cat > "$STAGING/BUILD_INFO" <<EOF
-          ladybird-nightly
-          Date:     ${BUILD_DATE}
-          Commit:   ${UPSTREAM_SHA}
-          Short:    ${SHORT_SHA}
-          Built by: https://github.com/${{ github.repository }}
-          EOF
-
-          # baking a launcher wrapper that sets LD_LIBRARY_PATH
+          # launcher wrapper
           cat > "$STAGING/run-ladybird.sh" <<'SCRIPT'
           #!/usr/bin/env bash
           SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -222,11 +183,17 @@ jobs:
           SCRIPT
           chmod +x "$STAGING/run-ladybird.sh"
 
-          # compress
+          cat > "$STAGING/BUILD_INFO" <<EOF
+          ladybird-nightly
+          Date:     ${BUILD_DATE}
+          Commit:   ${UPSTREAM_SHA}
+          Short:    ${SHORT_SHA}
+          Built by: https://github.com/${{ github.repository }}
+          EOF
+
           cd /tmp
           tar -czf "${RELEASE_NAME}.tar.gz" "${RELEASE_NAME}"
           echo "TARBALL=/tmp/${RELEASE_NAME}.tar.gz" >> "$GITHUB_ENV"
-          echo "RELEASE_NAME=${RELEASE_NAME}" >> "$GITHUB_ENV"
           ls -lh "${RELEASE_NAME}.tar.gz"
 
       - name: Create GitHub Release
