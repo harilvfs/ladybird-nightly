@@ -131,6 +131,8 @@ jobs:
         working-directory: ladybird
         run: |
           set -euo pipefail
+          export CFLAGS="-march=haswell"
+          export CXXFLAGS="-march=haswell"
           CC=clang-21 CXX=clang++-21 python3 Meta/ladybird.py build
 
       - name: Show ccache stats
