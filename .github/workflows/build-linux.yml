@@ -45,7 +45,25 @@ jobs:
       - name: Compare SHAs
         id: compare
         run: |
-          echo "should_build=true" >> "$GITHUB_OUTPUT"
+          UPSTREAM_SHA="${{ steps.upstream.outputs.sha }}"
+          LAST_TAG="${{ steps.last_built.outputs.last_tag }}"
+
+          if [[ "$LAST_TAG" == "none" || "$LAST_TAG" == "null" ]]; then
+            echo "No previous release found. Will build."
+            echo "should_build=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          LAST_SHORT="${LAST_TAG##*-}"
+          CURRENT_SHORT="${UPSTREAM_SHA:0:7}"
+
+          if [[ "$LAST_SHORT" == "$CURRENT_SHORT" ]]; then
+            echo "No new commits since last build ($CURRENT_SHORT). Skipping."
+            echo "should_build=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "New commits detected ($LAST_SHORT -> $CURRENT_SHORT). Will build."
+            echo "should_build=true" >> "$GITHUB_OUTPUT"
+          fi
 
   build:
     name: Build Ladybird (Linux x86_64)
@@ -131,8 +149,6 @@ jobs:
         working-directory: ladybird
         run: |
           set -euo pipefail
-          export CFLAGS="-march=haswell"
-          export CXXFLAGS="-march=haswell"
           CC=clang-21 CXX=clang++-21 python3 Meta/ladybird.py build
 
       - name: Show ccache stats
@@ -156,7 +172,7 @@ jobs:
             find "$VCPKG_LIB" -maxdepth 1 \( -name "*.so" -o -name "*.so.*" \) -exec cp -P {} "$STAGING/lib/" \;
           fi
 
-          printf '#!/usr/bin/env bash\nSCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"\nexport LD_LIBRARY_PATH="$SCRIPT_DIR/lib:${LD_LIBRARY_PATH:-}"\nexec "$SCRIPT_DIR/bin/Ladybird" "$@"\n' > "$STAGING/run-ladybird.sh"
+          printf '#!/usr/bin/env bash\nSCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"\nexport LD_LIBRARY_PATH="$SCRIPT_DIR/lib:${LD_LIBRARY_PATH:-}"\nexec "$SCRIPT_DIR/bin/Ladybird" "$@"\n' > "$STAGING/run-ladybird.sh"
           chmod +x "$STAGING/run-ladybird.sh"
 
           printf 'ladybird-nightly\nDate:     %s\nCommit:   %s\nShort:    %s\nBuilt by: https://github.com/%s\n' \

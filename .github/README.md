@@ -9,17 +9,15 @@ Automated nightly builds of [Ladybird Browser](https://github.com/LadybirdBrowse
 >
 > Instead, you can report bugs related to the install script or contribute any fixes related to this repo.
 
-<!--
-
 ## Install
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/YOUR_USER/ladybird-nightly/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/harilvfs/ladybird-nightly/main/install.sh | bash
 ```
 
 Custom install path:
 ```sh
-curl -fsSL https://raw.githubusercontent.com/YOUR_USER/ladybird-nightly/main/install.sh | bash -s -- --dir ~/.local/ladybird
+curl -fsSL https://raw.githubusercontent.com/harilvfs/ladybird-nightly/main/install.sh | bash -s -- --dir ~/.local/ladybird
 ```
 
 Then run:
@@ -27,7 +25,18 @@ Then run:
 ladybird
 ```
 
--->
+## Uninstall
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/harilvfs/ladybird-nightly/main/install.sh | bash -s -- --uninstall
+```
+
+This removes the install directory (`~/.local/ladybird-nightly`) and the symlink (`~/.local/bin/ladybird`).
+
+If you used a custom install path, pass it with `--dir`:
+```sh
+curl -fsSL https://raw.githubusercontent.com/harilvfs/ladybird-nightly/main/install.sh | bash -s -- --uninstall --dir ~/.local/ladybird
+```
 
 ## Runtime requirements (Linux)
 
@@ -41,3 +50,9 @@ sudo pacman -S qt6-base
 # Fedora
 sudo dnf install qt6-qtbase
 ```
+
+## Known Issues
+
+Crashes on Intel Haswell (4th gen, ~2013) and older CPUs with `SIGILL` in WebContent.
+This should be upstream Ladybird issue. See [ladybird#8989](https://github.com/LadybirdBrowser/ladybird/issues/8989) [ladybird#3836](https://github.com/LadybirdBrowser/ladybird/issues/3836) [ladybird#10298](https://github.com/LadybirdBrowser/ladybird/issues/10298)
+Builds should work fine if your CPUs are from ~2016 onwards.
