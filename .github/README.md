@@ -29,15 +29,6 @@ ladybird
 
 -->
 
-## How it works
-
-- Runs daily at 02:00 UTC via GitHub Actions
-- Checks the latest commit SHA on `LadybirdBrowser/ladybird` master branch
-- Skips the build if nothing changed since the last release
-- Builds with `clang-21`, `cmake --preset default`, Qt6 frontend
-- Packages binaries + libraries + resources into a tarball
-- Publishes as a GitHub Release tagged `nightly-YYYYMMDD-SHORTSHA`
-
 ## Runtime requirements (Linux)
 
 ```sh
