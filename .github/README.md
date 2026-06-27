@@ -54,5 +54,5 @@ sudo dnf install qt6-qtbase
 ## Known Issues
 
 Crashes on Intel Haswell (4th gen, ~2013) and older CPUs with `SIGILL` in WebContent.
-This should be upstream Ladybird issue. See [ladybird#8989](https://github.com/LadybirdBrowser/ladybird/issues/8989) [ladybird#3836](https://github.com/LadybirdBrowser/ladybird/issues/3836) [ladybird#10298](https://github.com/LadybirdBrowser/ladybird/issues/10298)
+This should be upstream Ladybird issue. See [ladybird#8989](https://github.com/LadybirdBrowser/ladybird/issues/8989) [ladybird#3836](https://github.com/LadybirdBrowser/ladybird/issues/3836) [ladybird#10298](https://github.com/LadybirdBrowser/ladybird/issues/10298).
 Builds should work fine if your CPUs are from ~2016 onwards.
