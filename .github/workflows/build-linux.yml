@@ -3,7 +3,7 @@ name: Nightly Linux Build
 on:
   schedule:
     - cron: '0 2 * * *'
-  workflow_dispatch: 
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -54,7 +54,6 @@ jobs:
             exit 0
           fi
 
-          # extract SHA embedded in tag name like: nightly-yyyymmdd-shortsha
           LAST_SHORT="${LAST_TAG##*-}"
           CURRENT_SHORT="${UPSTREAM_SHA:0:7}"
 
@@ -85,7 +84,6 @@ jobs:
         run: |
           set -euo pipefail
 
-          # base deps for ladybird build from ladybird build instructions 
           sudo apt-get update -y
           sudo apt-get install -y \
             autoconf autoconf-archive automake build-essential ccache cmake curl \
@@ -95,7 +93,6 @@ jobs:
             libpulse-dev \
             tar unzip zip jq wget lsb-release
 
-          # cmake 3.30+ from kitware as ubuntu-24.04 ships 3.28 which is too old
           wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null \
             | gpg --dearmor - \
             | sudo tee /usr/share/keyrings/kitware-archive-keyring.gpg >/dev/null
@@ -125,7 +122,7 @@ jobs:
           git checkout "$UPSTREAM_SHA"
           echo "Checked out: $(git log -1 --oneline)"
 
-      - name: Cache vcpkg downloads
+      - name: Cache vcpkg
         uses: actions/cache@v4
         with:
           path: |
@@ -154,47 +151,43 @@ jobs:
           set -euo pipefail
           CC=clang-21 CXX=clang++-21 python3 Meta/ladybird.py build
 
-      - name: Install Ladybird to staging
+      - name: Show ccache stats
+        run: ccache --show-stats
+
+      - name: Package release tarball
         working-directory: ladybird
         run: |
           set -euo pipefail
+
           RELEASE_NAME="ladybird-nightly-linux-x86_64-${BUILD_DATE}-${SHORT_SHA}"
           STAGING="/tmp/${RELEASE_NAME}"
-          mkdir -p "$STAGING"
+          mkdir -p "$STAGING/lib"
 
           cmake --install Build/release --prefix "$STAGING"
 
-          echo "=== Installed files ==="
-          find "$STAGING" -type f | sort
+          # vcpkg shared libs are NOT included by cmake --install
+          # so these are causing "cannot open shared object" errors (libskia, libicu, libssl, libcurl etc.)
+          VCPKG_LIB="Build/release/vcpkg_installed/x64-linux-dynamic/lib"
+          if [[ -d "$VCPKG_LIB" ]]; then
+            find "$VCPKG_LIB" -maxdepth 1 \( -name "*.so" -o -name "*.so.*" \) -exec cp -P {} "$STAGING/lib/" \;
+          fi
 
-          echo "STAGING=$STAGING" >> "$GITHUB_ENV"
-          echo "RELEASE_NAME=$RELEASE_NAME" >> "$GITHUB_ENV"
-
-      - name: Package release tarball
-        run: |
-          set -euo pipefail
-
-          # launcher wrapper
-          cat > "$STAGING/run-ladybird.sh" <<'SCRIPT'
-          #!/usr/bin/env bash
-          SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-          export LD_LIBRARY_PATH="$SCRIPT_DIR/lib:$LD_LIBRARY_PATH"
-          exec "$SCRIPT_DIR/bin/Ladybird" "$@"
-          SCRIPT
+          printf '#!/usr/bin/env bash\nSCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"\nexport LD_LIBRARY_PATH="$SCRIPT_DIR/lib:${LD_LIBRARY_PATH:-}"\nexec "$SCRIPT_DIR/bin/Ladybird" "$@"\n' > "$STAGING/run-ladybird.sh"
           chmod +x "$STAGING/run-ladybird.sh"
 
-          cat > "$STAGING/BUILD_INFO" <<EOF
-          ladybird-nightly
-          Date:     ${BUILD_DATE}
-          Commit:   ${UPSTREAM_SHA}
-          Short:    ${SHORT_SHA}
-          Built by: https://github.com/${{ github.repository }}
-          EOF
+          printf 'ladybird-nightly\nDate:     %s\nCommit:   %s\nShort:    %s\nBuilt by: https://github.com/%s\n' \
+            "$BUILD_DATE" "$UPSTREAM_SHA" "$SHORT_SHA" "${{ github.repository }}" \
+            > "$STAGING/BUILD_INFO"
+
+          echo "Final package contents"
+          find "$STAGING" -type f | sort
 
           cd /tmp
           tar -czf "${RELEASE_NAME}.tar.gz" "${RELEASE_NAME}"
-          echo "TARBALL=/tmp/${RELEASE_NAME}.tar.gz" >> "$GITHUB_ENV"
           ls -lh "${RELEASE_NAME}.tar.gz"
+
+          echo "TARBALL=/tmp/${RELEASE_NAME}.tar.gz" >> "$GITHUB_ENV"
+          echo "RELEASE_NAME=${RELEASE_NAME}" >> "$GITHUB_ENV"
 
       - name: Create GitHub Release
         env:
@@ -202,20 +195,18 @@ jobs:
         run: |
           TAG="nightly-${BUILD_DATE}-${SHORT_SHA}"
 
-          cat > /tmp/release-notes.md << EOF
-          **Ladybird nightly build**
-
-          - Upstream commit: [\`${SHORT_SHA}\`](https://github.com/LadybirdBrowser/ladybird/commit/${UPSTREAM_SHA})
-          - Built: ${BUILD_DATE}
-          - Platform: Linux x86_64
-
-          **Install:**
-          \`\`\`bash
-          curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/main/install.sh | bash
-          \`\`\`
-
-          > Warning Unofficial nightly build. Ladybird is pre-alpha software.
-          EOF
+          echo "**Ladybird nightly build**" > /tmp/release-notes.md
+          echo "" >> /tmp/release-notes.md
+          echo "- Upstream commit: [\`${SHORT_SHA}\`](https://github.com/LadybirdBrowser/ladybird/commit/${UPSTREAM_SHA})" >> /tmp/release-notes.md
+          echo "- Built: ${BUILD_DATE}" >> /tmp/release-notes.md
+          echo "- Platform: Linux x86_64" >> /tmp/release-notes.md
+          echo "" >> /tmp/release-notes.md
+          echo "**Install:**" >> /tmp/release-notes.md
+          echo '```bash' >> /tmp/release-notes.md
+          echo "curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/main/install.sh | bash" >> /tmp/release-notes.md
+          echo '```' >> /tmp/release-notes.md
+          echo "" >> /tmp/release-notes.md
+          echo "> Unofficial nightly build. Ladybird is pre-alpha software." >> /tmp/release-notes.md
 
           gh release create "$TAG" \
             --repo "${{ github.repository }}" \
