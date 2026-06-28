@@ -149,7 +149,12 @@ jobs:
         working-directory: ladybird
         run: |
           set -euo pipefail
-          CC=clang-21 CXX=clang++-21 python3 Meta/ladybird.py build -- -DENABLE_CI_BASELINE_CPU=ON
+
+          # patch ladybird.py to inject the cmake flag 
+          # idk patching in their official build script will work testing it
+          sed -i 's/run_command(config_args, exit_on_failure=True)/config_args.append("-DENABLE_CI_BASELINE_CPU=ON"); run_command(config_args, exit_on_failure=True)/' Meta/ladybird.py
+
+          CC=clang-21 CXX=clang++-21 python3 Meta/ladybird.py build
           
       - name: Show ccache stats
         run: ccache --show-stats
