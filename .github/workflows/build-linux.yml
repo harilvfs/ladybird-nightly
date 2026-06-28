@@ -149,8 +149,8 @@ jobs:
         working-directory: ladybird
         run: |
           set -euo pipefail
-          CC=clang-21 CXX=clang++-21 python3 Meta/ladybird.py build
-
+          CC=clang-21 CXX=clang++-21 python3 Meta/ladybird.py build -- -DENABLE_CI_BASELINE_CPU=ON
+          
       - name: Show ccache stats
         run: ccache --show-stats
 
