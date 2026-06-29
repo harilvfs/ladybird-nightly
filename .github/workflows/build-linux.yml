@@ -150,8 +150,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          # patch ladybird.py to inject the cmake flag 
-          # idk patching in their official build script will work testing it
+          # patch ladybird.py to inject the -DENABLE_CI_BASELINE_CPU=ON flag 
           sed -i 's/run_command(config_args, exit_on_failure=True)/config_args.append("-DENABLE_CI_BASELINE_CPU=ON"); run_command(config_args, exit_on_failure=True)/' Meta/ladybird.py
 
           CC=clang-21 CXX=clang++-21 python3 Meta/ladybird.py build
@@ -177,10 +176,12 @@ jobs:
             find "$VCPKG_LIB" -maxdepth 1 \( -name "*.so" -o -name "*.so.*" \) -exec cp -P {} "$STAGING/lib/" \;
           fi
 
-          # bundle CA certs so SSL works on any distro
-          cp /etc/ssl/certs/ca-certificates.crt "$STAGING/ca-bundle.crt"
+          # bundle CA certs for the install script to place under /etc/ssl.
+          # Ladybird's Landlock sandbox only allows /etc/ssl; paths outside
+          # (including the install dir) are blocked by the kernel.
+          cp /etc/ssl/certs/ca-certificates.crt "$STAGING/ca-bundle-sandbox.crt"
 
-          printf '#!/usr/bin/env bash\nSCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"\nexport LD_LIBRARY_PATH="$SCRIPT_DIR/lib:${LD_LIBRARY_PATH:-}"\nexport SSL_CERT_FILE="$SCRIPT_DIR/ca-bundle.crt"\nexport CURL_CA_BUNDLE="$SCRIPT_DIR/ca-bundle.crt"\nexec "$SCRIPT_DIR/bin/Ladybird" "$@"\n' > "$STAGING/run-ladybird.sh"
+          printf '#!/usr/bin/env bash\nSCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"\nexport LD_LIBRARY_PATH="$SCRIPT_DIR/lib:${LD_LIBRARY_PATH:-}"\nSANDBOX_CERT="/etc/ssl/ladybird-ca-bundle.crt"\nif [[ -f "$SANDBOX_CERT" && ! -L "$SANDBOX_CERT" ]]; then\n    export SSL_CERT_FILE="$SANDBOX_CERT"\n    export CURL_CA_BUNDLE="$SANDBOX_CERT"\nfi\nexec "$SCRIPT_DIR/bin/Ladybird" "$@"\n' > "$STAGING/run-ladybird.sh"
           chmod +x "$STAGING/run-ladybird.sh"
 
           printf 'ladybird-nightly\nDate:     %s\nCommit:   %s\nShort:    %s\nBuilt by: https://github.com/%s\n' \

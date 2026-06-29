@@ -53,6 +53,25 @@ sudo dnf install qt6-qtbase
 
 ## Known Issues
 
+### SSL / HTTPS not working (error 77)
+
+Ladybird uses a Landlock sandbox that only allows filesystem access to `/etc/ssl` for SSL certificates. On distros like **Arch Linux**, **openSUSE**, and **NixOS**, the cert files under `/etc/ssl/` are symlinks pointing to `/etc/ca-certificates/` path *outside* the sandbox. The kernel resolves the symlink and
+blocks access to the real file, causing all HTTPS requests to fail with this error:
+
+```
+Request::handle_complete_state: Unable to map error (77): "Problem with the SSL CA cert (path? access rights?)"
+```
+
+The install script now fix this automatically by placing a real copy of the cert bundle at `/etc/ssl/ladybird-ca-bundle.crt`. If you see this error, re-run the installer or manually fix it:
+
+```sh
+sudo cp ~/.local/ladybird-nightly/ca-bundle-sandbox.crt /etc/ssl/ladybird-ca-bundle.crt
+```
+
+This is an upstream Ladybird issue. See [ladybird#8303](https://github.com/LadybirdBrowser/ladybird/issues/8303).
+
+### SIGILL crash on older CPUs
+
 Crashes on Intel Haswell (4th gen, ~2013) and older CPUs with `SIGILL` in WebContent.
 This should be upstream Ladybird issue. See [ladybird#8989](https://github.com/LadybirdBrowser/ladybird/issues/8989) [ladybird#3836](https://github.com/LadybirdBrowser/ladybird/issues/3836) [ladybird#10298](https://github.com/LadybirdBrowser/ladybird/issues/10298).
 Builds should work fine if your CPUs are from ~2016 onwards.

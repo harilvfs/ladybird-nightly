@@ -86,6 +86,39 @@ LAUNCHER="$INSTALL_DIR/run-ladybird.sh"
 [[ -f "$LAUNCHER" ]] || { echo "error: launcher script not found at $LAUNCHER package may be not work properly." >&2; exit 1; }
 chmod +x "$LAUNCHER"
 
+SANDBOX_CERT="/etc/ssl/ladybird-ca-bundle.crt"
+NEED_SANDBOX_CERT=false
+
+# Ladybird's Landlock sandbox only allows /etc/ssl for certs.
+# if the system's cert files are symlinks to /etc/ca-certificates/
+# (Arch, openSUSE, NixOS) or don't exist, HTTPS will fail silently.
+NEED_SANDBOX_CERT=true
+for cert_path in /etc/ssl/cert.pem /etc/ssl/certs/ca-certificates.crt; do
+  if [[ -f "$cert_path" && ! -L "$cert_path" ]]; then
+    NEED_SANDBOX_CERT=false
+    break
+  fi
+done
+
+if $NEED_SANDBOX_CERT; then
+  if [[ -w /etc/ssl/ ]] 2>/dev/null || sudo -n true 2>/dev/null; then
+    echo "Installing SSL cert bundle for Landlock sandbox..."
+    sudo cp "$INSTALL_DIR/ca-bundle-sandbox.crt" "$SANDBOX_CERT"
+    echo "Installed: $SANDBOX_CERT"
+  elif command -v sudo &>/dev/null; then
+    echo ""
+    echo "HTTPS requires a real cert file under /etc/ssl/ for the Ladybird sandbox."
+    echo "Please enter your password to install it:"
+    sudo cp "$INSTALL_DIR/ca-bundle-sandbox.crt" "$SANDBOX_CERT"
+    echo "Installed: $SANDBOX_CERT"
+  else
+    echo ""
+    echo "warning: could not install SSL cert for Ladybird sandbox (no sudo)."
+    echo "HTTPS sites may not load. To fix manually, run:"
+    echo "  sudo cp '$INSTALL_DIR/ca-bundle-sandbox.crt' '$SANDBOX_CERT'"
+  fi
+fi
+
 LOCAL_BIN="$HOME/.local/bin"
 mkdir -p "$LOCAL_BIN"
 ln -sf "$LAUNCHER" "$LOCAL_BIN/ladybird"
