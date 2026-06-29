@@ -181,7 +181,7 @@ jobs:
           # (including the install dir) are blocked by the kernel.
           cp /etc/ssl/certs/ca-certificates.crt "$STAGING/ca-bundle-sandbox.crt"
 
-          printf '#!/usr/bin/env bash\nSCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"\nexport LD_LIBRARY_PATH="$SCRIPT_DIR/lib:${LD_LIBRARY_PATH:-}"\nSANDBOX_CERT="/etc/ssl/ladybird-ca-bundle.crt"\nif [[ -f "$SANDBOX_CERT" && ! -L "$SANDBOX_CERT" ]]; then\n    export SSL_CERT_FILE="$SANDBOX_CERT"\n    export CURL_CA_BUNDLE="$SANDBOX_CERT"\nfi\nexec "$SCRIPT_DIR/bin/Ladybird" "$@"\n' > "$STAGING/run-ladybird.sh"
+          printf '#!/usr/bin/env bash\nSCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"\nexport LD_LIBRARY_PATH="$SCRIPT_DIR/lib:${LD_LIBRARY_PATH:-}"\nSANDBOX_CERT="/etc/ssl/ladybird-ca-bundle.crt"\nif [[ -f "$SANDBOX_CERT" && ! -L "$SANDBOX_CERT" ]]; then\n    export SSL_CERT_FILE="$SANDBOX_CERT"\n    export CURL_CA_BUNDLE="$SANDBOX_CERT"\nfi\nif [[ "$(basename "$0")" == "lb" ]]; then\n    exec "$SCRIPT_DIR/bin/Ladybird" "$@" >/dev/null 2>&1\nfi\nexec "$SCRIPT_DIR/bin/Ladybird" "$@"\n' > "$STAGING/run-ladybird.sh"
           chmod +x "$STAGING/run-ladybird.sh"
 
           printf 'ladybird-nightly\nDate:     %s\nCommit:   %s\nShort:    %s\nBuilt by: https://github.com/%s\n' \

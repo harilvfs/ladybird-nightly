@@ -22,8 +22,12 @@ while [[ $# -gt 0 ]]; do
       echo "Uninstalling Ladybird nightly..."
       rm -rf "$INSTALL_DIR"
       rm -f "$HOME/.local/bin/ladybird"
+      rm -f "$HOME/.local/bin/lb"
+      rm -f "$HOME/.local/share/applications/ladybird-nightly.desktop"
       echo "Removed $INSTALL_DIR"
       echo "Removed $HOME/.local/bin/ladybird"
+      echo "Removed $HOME/.local/bin/lb"
+      echo "Removed $HOME/.local/share/applications/ladybird-nightly.desktop"
       echo "Done."
       exit 0
       ;;
@@ -123,6 +127,26 @@ LOCAL_BIN="$HOME/.local/bin"
 mkdir -p "$LOCAL_BIN"
 ln -sf "$LAUNCHER" "$LOCAL_BIN/ladybird"
 echo "Symlinked: $LOCAL_BIN/ladybird -> $LAUNCHER"
+
+# lb = silent launcher (no terminal output for daily use from Rofi)
+ln -sf "$LAUNCHER" "$LOCAL_BIN/lb"
+echo "Symlinked: $LOCAL_BIN/lb -> $LAUNCHER"
+
+# desktop file for Rofi / app launchers
+DESKTOP_DIR="$HOME/.local/share/applications"
+mkdir -p "$DESKTOP_DIR"
+cat > "$DESKTOP_DIR/ladybird-nightly.desktop" << EOF
+[Desktop Entry]
+Name=Ladybird (Nightly)
+Comment=Truly independent web browser
+Exec=$LAUNCHER %u
+Icon=ladybird
+Type=Application
+Categories=Network;WebBrowser;
+Terminal=false
+StartupWMClass=Ladybird
+EOF
+echo "Installed: $DESKTOP_DIR/ladybird-nightly.desktop"
 
 if ! echo "$PATH" | tr ':' '\n' | grep -qx "$LOCAL_BIN"; then
   echo ""
