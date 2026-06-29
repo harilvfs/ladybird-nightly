@@ -17,7 +17,7 @@ curl -fsSL https://raw.githubusercontent.com/harilvfs/ladybird-nightly/main/inst
 
 Custom install path:
 ```sh
-curl -fsSL https://raw.githubusercontent.com/harilvfs/ladybird-nightly/main/install.sh | bash -s -- --dir ~/.local/ladybird
+curl -fsSL https://raw.githubusercontent.com/harilvfs/ladybird-nightly/main/install.sh | bash -s -- --dir ~/.local/ladybird # place your desire dir
 ```
 
 Then run:
@@ -32,11 +32,11 @@ lb         # silent (no output for Rofi / daily use)
 curl -fsSL https://raw.githubusercontent.com/harilvfs/ladybird-nightly/main/install.sh | bash -s -- --uninstall
 ```
 
-This removes the install directory (`~/.local/ladybird-nightly`) and the symlink (`~/.local/bin/ladybird`).
+This removes the install directory (`~/.local/ladybird-nightly`), the symlinks (`~/.local/bin/ladybird`, `~/.local/bin/lb`), and the desktop file (`~/.local/share/applications/ladybird-nightly.desktop`).
 
 If you used a custom install path, pass it with `--dir`:
 ```sh
-curl -fsSL https://raw.githubusercontent.com/harilvfs/ladybird-nightly/main/install.sh | bash -s -- --uninstall --dir ~/.local/ladybird
+curl -fsSL https://raw.githubusercontent.com/harilvfs/ladybird-nightly/main/install.sh | bash -s -- --uninstall --dir ~/.local/ladybird # place your actual dir
 ```
 
 ## Runtime requirements (Linux)
