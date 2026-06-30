@@ -131,7 +131,7 @@ mkdir -p "$LOCAL_BIN"
 ln -sf "$LAUNCHER" "$LOCAL_BIN/ladybird"
 echo "Symlinked: $LOCAL_BIN/ladybird -> $LAUNCHER"
 
-# lb is silent launcher (no terminal output for daily use from Rofi)
+# lb is silent launcher (no terminal output mainly purpose is to use it from Rofi)
 ln -sf "$LAUNCHER" "$LOCAL_BIN/lb"
 echo "Symlinked: $LOCAL_BIN/lb -> $LAUNCHER"
 
