@@ -27,7 +27,7 @@ curl -fsSL https://raw.githubusercontent.com/harilvfs/ladybird-nightly/main/inst
 Then run:
 ```sh
 ladybird   # with terminal output
-lb         # silent (no output for Rofi or daily use)
+lb         # silent (no output godd for Rofi and daily use)
 ```
 
 ## Uninstall
