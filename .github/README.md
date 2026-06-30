@@ -34,7 +34,7 @@ lb         # silent (no output for Rofi / daily use)
 curl -fsSL https://raw.githubusercontent.com/harilvfs/ladybird-nightly/main/install.sh | bash -s -- --uninstall
 ```
 
-This removes the install directory (`~/.local/ladybird-nightly`), the symlinks (`~/.local/bin/ladybird`, `~/.local/bin/lb`), and the desktop file (`~/.local/share/applications/ladybird-nightly.desktop`).
+The `uninstall` flag removes the install directory along side other file's that was installed on your system. 
 
 If you used a custom install path, pass it with `--dir`:
 ```sh
