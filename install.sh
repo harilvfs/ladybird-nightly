@@ -4,9 +4,9 @@
 # or:    curl -fsSL ... | bash -s -- --dir /custom/path
 #
 # flags:
-#   --dir <path>     custom install directory (default: ~/.local/ladybird-nightly)
-#   --uninstall      remove Ladybird nightly and the symlink
-#   --help, -h       show usage information
+#   --dir <path>     custom install directory (default is: ~/.local/ladybird-nightly)
+#   --uninstall      remove Ladybird nightly and the files
+#   --help, -h       show usage
 
 set -euo pipefail
 
@@ -95,9 +95,10 @@ chmod +x "$LAUNCHER"
 SANDBOX_CERT="/etc/ssl/ladybird-ca-bundle.crt"
 NEED_SANDBOX_CERT=false
 
-# Ladybird's Landlock sandbox only allows /etc/ssl for certs.
+# ladybird's Landlock sandbox only allows /etc/ssl for certs.
 # if the system's cert files are symlinks to /etc/ca-certificates/
 # (Arch, openSUSE, NixOS) or don't exist, HTTPS will fail silently.
+# this is ladybird upstream issue currently;
 NEED_SANDBOX_CERT=true
 for cert_path in /etc/ssl/cert.pem /etc/ssl/certs/ca-certificates.crt; do
   if [[ -f "$cert_path" && ! -L "$cert_path" ]]; then
@@ -130,11 +131,11 @@ mkdir -p "$LOCAL_BIN"
 ln -sf "$LAUNCHER" "$LOCAL_BIN/ladybird"
 echo "Symlinked: $LOCAL_BIN/ladybird -> $LAUNCHER"
 
-# lb = silent launcher (no terminal output for daily use from Rofi)
+# lb is silent launcher (no terminal output for daily use from Rofi)
 ln -sf "$LAUNCHER" "$LOCAL_BIN/lb"
 echo "Symlinked: $LOCAL_BIN/lb -> $LAUNCHER"
 
-# desktop file for Rofi / app launchers
+# desktop file for Rofi
 DESKTOP_DIR="$HOME/.local/share/applications"
 mkdir -p "$DESKTOP_DIR"
 cat > "$DESKTOP_DIR/ladybird-nightly.desktop" << EOF
@@ -162,16 +163,28 @@ fi
 if ! echo "$PATH" | tr ':' '\n' | grep -qx "$LOCAL_BIN"; then
   echo ""
   echo "warning: $LOCAL_BIN is not in your PATH."
-  echo "Add this to your shell config (~/.bashrc, ~/.zshrc, etc.):"
-  echo '  export PATH="$HOME/.local/bin:$PATH"'
-  echo "Then restart your shell or run: source ~/.bashrc"
+  echo "Add this to your shell config:"
+  echo "  bash ~/.bashrc or zsh ~/.zshrc:"
+  echo '    export PATH="$HOME/.local/bin:$PATH"'
+  echo "  fish ~/.config/fish/config.fish:"
+  echo '    set -gx PATH $HOME/.local/bin $PATH'
+  echo ""
+  echo "Then restart your shell."
 fi
 
 echo ""
 echo "Ladybird nightly installed!"
 echo "Build info: $(cat "$INSTALL_DIR/BUILD_INFO" 2>/dev/null | head -3 || echo 'N/A')"
 echo ""
-echo "Run it with:  ladybird"
+echo "Run it with:  ladybird or lb"
 echo "Or directly: $LAUNCHER"
+echo ""
+echo "For dark theme on Linux, add to your shell config:"
+echo "  bash ~/.bashrc or zsh ~/.zshrc:"
+echo '    export QT_QPA_PLATFORMTHEME=qt6ct'
+echo '    export QT_STYLE_OVERRIDE=kvantum'
+echo "  fish ~/.config/fish/config.fish:"
+echo "    set -gx QT_QPA_PLATFORMTHEME qt6ct"
+echo "    set -gx QT_STYLE_OVERRIDE kvantum"
 echo ""
 echo "Note: this is pre-alpha software not ready for production usecase expect crashes and missing features."

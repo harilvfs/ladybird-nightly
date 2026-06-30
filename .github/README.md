@@ -54,6 +54,29 @@ sudo pacman -S qt6-base
 sudo dnf install qt6-qtbase
 ```
 
+## Dark Theme (Linux)
+
+Ladybird uses the Qt frontend on Linux. To make it respect your system's Qt theme, add these to your shell config:
+
+> [!NOTE]
+> Make sure you have `qt6ct` and `kvantum` installed and configured to use a dark theme.
+
+**bash** `~/.bashrc` or **zsh** `~/.zshrc`:
+
+```sh
+export QT_QPA_PLATFORMTHEME=qt6ct
+export QT_STYLE_OVERRIDE=kvantum
+```
+
+**fish** `~/.config/fish/config.fish`:
+
+```fish
+set -gx QT_QPA_PLATFORMTHEME qt6ct
+set -gx QT_STYLE_OVERRIDE kvantum
+```
+
+Then restart your shell.
+
 ## Known Issues
 
 ### SSL / HTTPS not working (error 77)
