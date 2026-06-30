@@ -1,3 +1,5 @@
+[![Nightly Linux Build](https://github.com/harilvfs/ladybird-nightly/actions/workflows/build-linux.yml/badge.svg)](https://github.com/harilvfs/ladybird-nightly/actions/workflows/build-linux.yml)
+
 # ladybird-nightly
 
 Automated nightly builds of [Ladybird Browser](https://github.com/LadybirdBrowser/ladybird) for Linux x86_64.
