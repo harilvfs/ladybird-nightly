@@ -24,10 +24,12 @@ while [[ $# -gt 0 ]]; do
       rm -f "$HOME/.local/bin/ladybird"
       rm -f "$HOME/.local/bin/lb"
       rm -f "$HOME/.local/share/applications/ladybird-nightly.desktop"
+      rm -f "$HOME/.local/share/icons/hicolor/256x256/apps/ladybird.png"
       echo "Removed $INSTALL_DIR"
       echo "Removed $HOME/.local/bin/ladybird"
       echo "Removed $HOME/.local/bin/lb"
       echo "Removed $HOME/.local/share/applications/ladybird-nightly.desktop"
+      echo "Removed $HOME/.local/share/icons/hicolor/256x256/apps/ladybird.png"
       echo "Done."
       exit 0
       ;;
@@ -147,6 +149,15 @@ Terminal=false
 StartupWMClass=Ladybird
 EOF
 echo "Installed: $DESKTOP_DIR/ladybird-nightly.desktop"
+
+ICON_DIR="$HOME/.local/share/icons/hicolor/256x256/apps"
+mkdir -p "$ICON_DIR"
+ICON_URL="https://raw.githubusercontent.com/$REPO/main/icons/ladybird.png"
+if curl -fsSL -o "$ICON_DIR/ladybird.png" "$ICON_URL"; then
+  echo "Installed: $ICON_DIR/ladybird.png"
+else
+  echo "warning: could not download ladybird icon. Desktop entry may show a generic icon."
+fi
 
 if ! echo "$PATH" | tr ':' '\n' | grep -qx "$LOCAL_BIN"; then
   echo ""
