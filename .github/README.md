@@ -27,7 +27,7 @@ curl -fsSL https://raw.githubusercontent.com/harilvfs/ladybird-nightly/main/inst
 Then run:
 ```sh
 ladybird   # with terminal output
-lb         # silent (no output godd for Rofi and daily use)
+lb         # silent (no output good for Rofi and daily use)
 ```
 
 ## Uninstall
@@ -62,6 +62,8 @@ Ladybird uses the Qt frontend on Linux. To make it respect your system's Qt them
 
 > [!NOTE]
 > Make sure you have `qt6ct` and `kvantum` installed and configured to use a dark theme.
+> 
+> This override is optional; if your system doesn't default to Qt6, this may help you!
 
 **bash** `~/.bashrc` or **zsh** `~/.zshrc`:
 
