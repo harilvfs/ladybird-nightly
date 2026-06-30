@@ -4,6 +4,8 @@
 
 Automated nightly builds of [Ladybird Browser](https://github.com/LadybirdBrowser/ladybird) for Linux x86_64.
 
+<img src="https://raw.githubusercontent.com/harilvfs/assets/refs/heads/main/ladybird-browser/ladybird-usage.png" />
+
 > [!WARNING]
 > **Unofficial.** This is not affiliated with the Ladybird project in any way. Ladybird is pre-alpha software only suitable for developer use.
 >
