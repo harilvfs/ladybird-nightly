@@ -79,7 +79,14 @@ set -gx QT_QPA_PLATFORMTHEME qt6ct
 set -gx QT_STYLE_OVERRIDE kvantum
 ```
 
-Then restart your shell.
+then restart your shell.
+
+Alternatively, you can set these system-wide by adding the following to `/etc/environment`:
+
+```
+QT_QPA_PLATFORMTHEME=qt6ct
+QT_STYLE_OVERRIDE=kvantum
+```
 
 ## Known Issues
 
