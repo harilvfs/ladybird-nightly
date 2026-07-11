@@ -133,7 +133,7 @@ jobs:
 
           if [[ "${{ steps.cache-qt.outputs.cache-hit }}" != "true" ]]; then
             pip install --break-system-packages aqtinstall
-            aqt install-qt linux desktop "$QT_VERSION" gcc_64 \
+            aqt install-qt linux desktop "$QT_VERSION" linux_gcc_64 \
               -m qtwayland qtmultimedia qtimageformats qtsvg \
               -O "$QT_DIR"
           fi
