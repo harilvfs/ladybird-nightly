@@ -88,8 +88,7 @@ jobs:
           sudo apt-get install -y \
             autoconf autoconf-archive automake build-essential ccache cmake curl \
             fonts-liberation2 git libdrm-dev libgl1-mesa-dev libtool nasm \
-            ninja-build pkg-config python3-venv \
-            qt6-base-dev qt6-tools-dev-tools qt6-wayland \
+            ninja-build pkg-config python3-venv python3-pip \
             libpulse-dev \
             tar unzip zip jq wget lsb-release
 
@@ -114,6 +113,34 @@ jobs:
           cmake --version
           clang-21 --version
           ninja --version
+
+      - name: Cache Qt
+        id: cache-qt
+        uses: actions/cache@v4
+        with:
+          path: /opt/qt
+          key: qt-6.9.0-linux-gcc64
+
+      - name: Install Qt 6.9 (aqtinstall)
+        run: |
+          set -euo pipefail
+
+          # ladybird now requires Qt >= 6.9 (UI/Qt/CMakeLists.txt), but
+          # ubuntu 24.04's apt repo only ships 6.4.2 old version. fetching official Qt
+          # binaries with aqtinstall instead of depending on apt.
+          QT_VERSION="6.9.0"
+          QT_DIR="/opt/qt"
+
+          if [[ "${{ steps.cache-qt.outputs.cache-hit }}" != "true" ]]; then
+            pip install --break-system-packages aqtinstall
+            aqt install-qt linux desktop "$QT_VERSION" gcc_64 \
+              -m qtwayland qtmultimedia qtimageformats qtsvg \
+              -O "$QT_DIR"
+          fi
+
+          echo "Qt6_DIR=${QT_DIR}/${QT_VERSION}/gcc_64/lib/cmake/Qt6" >> "$GITHUB_ENV"
+          echo "CMAKE_PREFIX_PATH=${QT_DIR}/${QT_VERSION}/gcc_64" >> "$GITHUB_ENV"
+          echo "${QT_DIR}/${QT_VERSION}/gcc_64/bin" >> "$GITHUB_PATH"
 
       - name: Clone Ladybird at exact upstream SHA
         run: |
