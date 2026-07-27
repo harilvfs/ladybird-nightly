@@ -1,8 +1,11 @@
 [![Nightly Linux Build](https://github.com/harilvfs/ladybird-nightly/actions/workflows/build-linux.yml/badge.svg)](https://github.com/harilvfs/ladybird-nightly/actions/workflows/build-linux.yml)
+[![Latest Release](https://img.shields.io/github/v/release/harilvfs/ladybird-nightly)](https://github.com/harilvfs/ladybird-nightly/releases)
 
-# ladybird-nightly
+# Ladybird Nightly
 
-Automated nightly builds of [Ladybird Browser](https://github.com/LadybirdBrowser/ladybird) for Linux x86_64.
+**Unofficial, automated nightly builds of the [Ladybird browser](https://github.com/LadybirdBrowser/ladybird) for Linux x86_64.**
+
+Ladybird doesn't publish official nightly binaries yet, and building it from source takes a lot of time and a correctly configured toolchain. This repo runs a daily CI pipeline that check upstream `master` branch and build with the latest commit hash, so you can get a ready-to-run Ladybird browser build without compiling on your own.
 
 <img src="https://raw.githubusercontent.com/harilvfs/assets/refs/heads/main/ladybird-browser/ladybird-usage.png" />
 
@@ -112,3 +115,7 @@ This is an upstream Ladybird issue. See [ladybird#8303](https://github.com/Ladyb
 Crashes on Intel Haswell (4th gen, ~2013) and older CPUs with `SIGILL` in WebContent.
 This should be upstream Ladybird issue. See [ladybird#8989](https://github.com/LadybirdBrowser/ladybird/issues/8989) [ladybird#3836](https://github.com/LadybirdBrowser/ladybird/issues/3836) [ladybird#10298](https://github.com/LadybirdBrowser/ladybird/issues/10298).
 Builds should work fine if your CPUs are from ~2016 onwards.
+
+## Why this exists
+- Official Ladybird nightly builds aren't available yet
+- It Makes Easier for you to track Ladybird's fast-moving development without setting up a local build environment
