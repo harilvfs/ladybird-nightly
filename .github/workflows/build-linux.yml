@@ -89,7 +89,7 @@ jobs:
             autoconf autoconf-archive automake build-essential ccache cmake curl \
             fonts-liberation2 git libdrm-dev libgl1-mesa-dev libtool nasm \
             ninja-build pkg-config python3-venv python3-pip \
-            libpulse-dev \
+            libpulse-dev libwayland-dev libxkbcommon-dev wayland-protocols \
             tar unzip zip jq wget lsb-release
 
           wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null \
