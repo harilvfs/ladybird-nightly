@@ -119,3 +119,9 @@ Builds should work fine if your CPUs are from ~2016 onwards.
 ## Why this exists
 - Official Ladybird nightly builds aren't available yet
 - It Makes Easier for you to track Ladybird's fast-moving development without setting up a local build environment
+
+## Build Status
+
+Nightly builds may occasionally fail due to upstream changes in Ladybird or its dependencies. As ladybird is a pre-alpha project that is actively under development this is expected.
+
+If the latest release is older than a few days, the build is likely broken. I will try to get it fixed as soon as possible.
