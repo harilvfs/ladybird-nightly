@@ -7,7 +7,7 @@
 
 Ladybird doesn't publish official nightly binaries yet, and building it from source takes a lot of time and a correctly configured toolchain. This repo runs a daily CI pipeline that check upstream `master` branch and build with the latest commit hash, so you can get a ready-to-run Ladybird browser build without compiling on your own.
 
-<img src="https://raw.githubusercontent.com/harilvfs/assets/refs/heads/main/ladybird-browser/ladybird-usage.png" />
+<img src="https://raw.githubusercontent.com/harilvfs/assets/refs/heads/main/ladybird-browser/ladybird-preview.png" />
 
 > [!WARNING]
 > **Unofficial.** This is not affiliated with the Ladybird project in any way. Ladybird is pre-alpha software only suitable for developer use.
