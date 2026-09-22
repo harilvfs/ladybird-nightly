@@ -1,5 +1,5 @@
 [![Nightly Linux Build](https://github.com/harilvfs/ladybird-nightly/actions/workflows/build-linux.yml/badge.svg)](https://github.com/harilvfs/ladybird-nightly/actions/workflows/build-linux.yml)
-[![Latest Release](https://img.shields.io/github/v/release/harilvfs/ladybird-nightly)](https://github.com/harilvfs/ladybird-nightly/releases)
+[![Latest Release](https://img.shields.io/github/v/release/harilvfs/ladybird-nightly)](https://github.com/harilvfs/ladybird-nightly/releases) [![Download](https://img.shields.io/github/downloads/harilvfs/ladybird-nightly/ladybird-nightly-linux-x86_64-20260922-be436cf.tar.gz?style=for-the-badge&label=download&color=green)](https://github.com/harilvfs/ladybird-nightly/releases/download/nightly-20260922-be436cf/ladybird-nightly-linux-x86_64-20260922-be436cf.tar.gz)
 
 # Ladybird Nightly
 
