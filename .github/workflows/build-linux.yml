@@ -119,16 +119,13 @@ jobs:
         uses: actions/cache@v4
         with:
           path: /opt/qt
-          key: qt-6.9.0-linux-gcc64-v2
+          key: qt-6.10.0-linux-gcc64
 
-      - name: Install Qt 6.9 (aqtinstall)
+      - name: Install Qt 6.10 (aqtinstall)
         run: |
           set -euo pipefail
 
-          # ladybird now requires Qt >= 6.9 (UI/Qt/CMakeLists.txt), but
-          # ubuntu 24.04's apt repo only ships 6.4.2 old version. fetching official Qt
-          # binaries with aqtinstall instead of depending on apt.
-          QT_VERSION="6.9.0"
+          QT_VERSION="6.10.0"
           QT_DIR="/opt/qt"
 
           if [[ "${{ steps.cache-qt.outputs.cache-hit }}" != "true" ]]; then
