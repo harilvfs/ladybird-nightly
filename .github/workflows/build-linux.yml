@@ -175,11 +175,22 @@ jobs:
         run: |
           set -euo pipefail
 
-          # patch ladybird.py to inject the -DENABLE_CI_BASELINE_CPU=ON flag 
-          sed -i 's/run_command(config_args, exit_on_failure=True)/config_args.append("-DENABLE_CI_BASELINE_CPU=ON"); run_command(config_args, exit_on_failure=True)/' Meta/ladybird.py
+          # upstream renamed ENABLE_CI_BASELINE_CPU -> LADYBIRD_BASELINE_CPU_TARGET (PR #15042)
+          # pass both names so this works on either side of the rename
+          sed -i 's/run_command(config_args, exit_on_failure=True)/config_args.extend(["-DLADYBIRD_BASELINE_CPU_TARGET=ON", "-DENABLE_CI_BASELINE_CPU=ON"]); run_command(config_args, exit_on_failure=True)/' Meta/ladybird.py
+
+          # fail fast, before the long build, if the patch did not apply
+          grep -q 'LADYBIRD_BASELINE_CPU_TARGET' Meta/ladybird.py || { echo "error: ladybird.py patch did not apply" >&2; exit 1; }
 
           CC=clang-21 CXX=clang++-21 python3 Meta/ladybird.py build
-          
+
+      - name: Verify baseline CPU flag took effect
+        working-directory: ladybird
+        run: |
+          grep -E 'BASELINE_CPU' Build/release/CMakeCache.txt || true
+          grep -qE '^(LADYBIRD_BASELINE_CPU_TARGET|ENABLE_CI_BASELINE_CPU):[A-Z]+=ON' Build/release/CMakeCache.txt \
+            || { echo "error: baseline CPU target is not ON, refusing to package" >&2; exit 1; }
+
       - name: Show ccache stats
         run: ccache --show-stats
 
