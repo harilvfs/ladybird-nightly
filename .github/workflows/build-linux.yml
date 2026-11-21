@@ -182,7 +182,8 @@ jobs:
           # fail fast, before the long build, if the patch did not apply
           grep -q 'LADYBIRD_BASELINE_CPU_TARGET' Meta/ladybird.py || { echo "error: ladybird.py patch did not apply" >&2; exit 1; }
 
-          CC=clang-21 CXX=clang++-21 python3 Meta/ladybird.py build
+          # build only the browser target, skip the unit tests (the nightly does not need them)
+          CC=clang-21 CXX=clang++-21 python3 Meta/ladybird.py build Ladybird
 
       - name: Verify baseline CPU flag took effect
         working-directory: ladybird
@@ -204,6 +205,12 @@ jobs:
           mkdir -p "$STAGING/lib"
 
           cmake --install Build/release --prefix "$STAGING"
+
+          # building only the Ladybird target means install could miss helper processes,
+          # so make sure the essential binaries exist before packaging
+          for BIN in bin/Ladybird libexec/WebContent libexec/RequestServer; do
+            [[ -x "$STAGING/$BIN" ]] || { echo "error: $BIN missing from install, refusing to package" >&2; find "$STAGING" -type f | sort; exit 1; }
+          done
 
           # vcpkg shared libs are NOT included by cmake --install
           # so these are causing "cannot open shared object" errors (libskia, libicu, libssl, libcurl etc.)
