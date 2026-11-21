@@ -182,8 +182,13 @@ jobs:
           # fail fast, before the long build, if the patch did not apply
           grep -q 'LADYBIRD_BASELINE_CPU_TARGET' Meta/ladybird.py || { echo "error: ladybird.py patch did not apply" >&2; exit 1; }
 
-          # build only the browser target, skip the unit tests (the nightly does not need them)
+          # build the browser target first (this also configures the build dir)
           CC=clang-21 CXX=clang++-21 python3 Meta/ladybird.py build Ladybird
+
+          # cmake --install needs every library built (e.g. liblagom-diff is not a dependency
+          # of the Ladybird target), so build the rest but keep going past failures in unit
+          # tests that upstream may have broken. a real failure still shows up at install time.
+          ninja -C Build/release -k 0 || echo "warning: some non-essential targets failed to build, continuing"
 
       - name: Verify baseline CPU flag took effect
         working-directory: ladybird
