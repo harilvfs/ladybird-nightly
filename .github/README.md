@@ -33,6 +33,19 @@ ladybird   # with terminal output
 lb         # silent (no output good for Rofi and daily use)
 ```
 
+## Experimental distro packages
+
+> [!WARNING]
+> These `.deb`, `.rpm`, and Arch packages are experimental and are being tested. They may fail to install, may not run, or may be unstable. Use them at your own risk.
+
+The Ubuntu and Fedora packaging builds use Ladybird's upstream build dependencies and packaging setup as a base. The Arch package, including its dependency mapping and packaging steps, is maintained by this project and is still under testing. Do not expect the Arch package to work reliably yet.
+
+To try a package, open the [releases page](https://github.com/harilvfs/ladybird-nightly/releases), choose the newest prerelease titled **Linux packages**, and download the file for your distribution:
+
+- **Ubuntu:** use the `.deb` built for Ubuntu 26.04. Do not expect it to work on Debian, especially Debian 12, or older Ubuntu releases. They may not provide the required Qt, glibc, and other library versions.
+- **Fedora:** use the `.rpm` built for Fedora 44. It may not install on older Fedora versions because they lack the required Qt and glibc versions.
+- **Arch Linux:** the `.pkg.tar.zst` package is experimental and may fail to install or run. It is currently being tested.
+
 ## Uninstall
 
 ```sh
