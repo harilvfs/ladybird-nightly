@@ -207,6 +207,22 @@ jobs:
           echo "RUSTUP_HOME=${RUSTUP_HOME}" >> "$GITHUB_ENV"
           echo "CARGO_HOME=${CARGO_HOME}" >> "$GITHUB_ENV"
 
+      # the build generates the WebAssembly spec tests, which needs wasm-tools; same pinned
+      # version and checksum that upstream's dependency script reads from the CI Dockerfile
+      - name: Install wasm-tools
+        run: |
+          set -euo pipefail
+          dockerfile=Meta/Docker/ci/Dockerfile
+          version="$(sed -n 's/^ARG WASM_TOOLS_VERSION=//p' "$dockerfile")"
+          sha256="$(sed -n 's/^ARG WASM_TOOLS_SHA256_X86_64=//p' "$dockerfile")"
+          name="wasm-tools-${version}-x86_64-linux"
+          curl --fail --silent --show-error --location --retry 5 --retry-all-errors \
+            --output /tmp/wasm-tools.tar.gz \
+            "https://github.com/bytecodealliance/wasm-tools/releases/download/v${version}/${name}.tar.gz"
+          echo "${sha256}  /tmp/wasm-tools.tar.gz" | sha256sum --check --quiet
+          tar -xzf /tmp/wasm-tools.tar.gz -C /usr/local/bin --strip-components=1 "${name}/wasm-tools"
+          wasm-tools --version
+
       - name: Build
         uses: ./.github/actions/build
         with:
