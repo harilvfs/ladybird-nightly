@@ -162,9 +162,134 @@ jobs:
           path: out/*
           if-no-files-found: error
 
+  BuildArch:
+    name: Arch Linux, x86_64
+    needs: Source
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+
+    container:
+      image: docker.io/library/archlinux:latest
+      options: --ulimit core=1
+
+    steps:
+      - name: Download the source
+        uses: actions/download-artifact@v8
+        with:
+          artifact-ids: ${{ needs.Source.outputs.artifact-id }}
+
+      - name: Unpack the source
+        run: |
+          tar -xf ./*-source.tar.xz --strip-components=1
+          rm ./*-source.tar.xz
+
+      # upstream's dependency script only knows Ubuntu and Fedora, so this list is
+      # those two lists mapped to Arch package names
+      - name: Install the build dependencies
+        run: |
+          set -euo pipefail
+          pacman -Syu --noconfirm --needed \
+            autoconf autoconf-archive automake base-devel clang cmake compiler-rt curl \
+            ffmpeg file git glslang libdrm libglvnd libpulse libtool lld llvm mesa nasm \
+            ncurses ninja patchelf perl pkgconf python qt6-base qt6-positioning qt6-tools \
+            qt6-wayland rustup tar ttf-liberation unzip wayland xcb-util-wm xz zip
+
+      # same toolchain pinning as upstream's script, using Arch's rustup
+      - name: Install Rust
+        run: |
+          set -euo pipefail
+          export RUSTUP_HOME=/opt/rustup
+          export CARGO_HOME=/opt/cargo
+          channel="$(sed -n 's/^channel = "\(.*\)"/\1/p' rust-toolchain.toml)"
+          components="$(sed -n 's/^components = \[\(.*\)\]/\1/p' rust-toolchain.toml | tr -d '" ')"
+          rustup toolchain install "$channel" --profile minimal --component "$components"
+          rustup default "$channel"
+          echo "RUSTUP_HOME=${RUSTUP_HOME}" >> "$GITHUB_ENV"
+          echo "CARGO_HOME=${CARGO_HOME}" >> "$GITHUB_ENV"
+
+      - name: Build
+        uses: ./.github/actions/build
+        with:
+          os: 'Linux'
+          arch: 'x86_64'
+          toolchain: 'Clang'
+          build_preset: 'Distribution'
+          use_caches: false
+
+      - name: Build the Arch package
+        env:
+          DATE: ${{ needs.Source.outputs.date }}
+          SHORT_SHA: ${{ needs.Source.outputs.short_sha }}
+        run: |
+          set -euo pipefail
+
+          # install only the runtime and desktop integration files under /usr
+          STAGE="${GITHUB_WORKSPACE}/pkgroot"
+          rm -rf "$STAGE"
+          for component in ladybird_Runtime ladybird_SystemIntegration; do
+            DESTDIR="$STAGE" cmake --install Build --strip --prefix /usr --component "$component"
+          done
+
+          if [[ ! -x "$STAGE/usr/bin/Ladybird" ]]; then
+            echo "error: usr/bin/Ladybird is missing, install layout:" >&2
+            find "$STAGE" -maxdepth 3 | sort >&2
+            exit 1
+          fi
+
+          # runtime dependencies: the system libraries the installed binaries link against,
+          # mapped to the pacman packages that own them
+          DEPENDS=$(
+            for f in "$STAGE"/usr/bin/* "$STAGE"/usr/libexec/*; do
+              if [[ -f "$f" && -x "$f" ]]; then
+                ldd "$f" 2>/dev/null || true
+              fi
+            done \
+              | awk '/=> \/(usr\/)?lib/ {print $3}' \
+              | sort -u \
+              | xargs -r pacman -Qqo 2>/dev/null \
+              | sort -u \
+              | tr '\n' ' ' || true
+          )
+          echo "Runtime dependencies: ${DEPENDS}"
+
+          # makepkg refuses to run as root, so build the package as a normal user
+          useradd -m builder
+          PKGDIR=/home/builder/pkg
+          mkdir -p "$PKGDIR" /tmp/pkgout
+          {
+            echo "pkgname=ladybird-nightly"
+            echo "pkgver=${DATE}.${SHORT_SHA}"
+            echo "pkgrel=1"
+            echo "pkgdesc='Unofficial nightly build of the Ladybird browser'"
+            echo "arch=('x86_64')"
+            echo "url='https://ladybird.org'"
+            echo "license=('BSD-2-Clause')"
+            echo "depends=(${DEPENDS})"
+            echo "provides=('ladybird')"
+            echo "conflicts=('ladybird' 'ladybird-git')"
+            echo "options=('!strip' '!debug' '!lto' '!emptydirs')"
+            echo 'package() {'
+            echo '  cp -a "$STAGE/." "$pkgdir/"'
+            echo '}'
+          } > "$PKGDIR/PKGBUILD"
+          chown -R builder "$PKGDIR" /tmp/pkgout
+
+          su builder -c "cd ${PKGDIR} && STAGE=${STAGE} PKGDEST=/tmp/pkgout makepkg --nodeps --nocheck --noconfirm"
+
+          mkdir -p "${GITHUB_WORKSPACE}/out"
+          cp /tmp/pkgout/*.pkg.tar.zst "${GITHUB_WORKSPACE}/out/ladybird-nightly-arch-x86_64-${DATE}-${SHORT_SHA}.pkg.tar.zst"
+          ls -lh "${GITHUB_WORKSPACE}/out"
+
+      - name: Upload
+        uses: actions/upload-artifact@v7
+        with:
+          name: pkg-arch
+          path: out/*
+          if-no-files-found: error
+
   Release:
     name: Publish to GitHub Release
-    needs: [Source, Build]
+    needs: [Source, Build, BuildArch]
     if: ${{ !cancelled() && needs.Source.result == 'success' }}
     runs-on: ubuntu-latest
 
@@ -214,6 +339,11 @@ jobs:
             echo "**Fedora:**" >> /tmp/release-notes.md
             echo '```bash' >> /tmp/release-notes.md
             echo "sudo dnf install ./ladybird-nightly-fedora-44-x86_64-*.rpm" >> /tmp/release-notes.md
+            echo '```' >> /tmp/release-notes.md
+            echo "" >> /tmp/release-notes.md
+            echo "**Arch Linux (update your system first with pacman -Syu):**" >> /tmp/release-notes.md
+            echo '```bash' >> /tmp/release-notes.md
+            echo "sudo pacman -U ./ladybird-nightly-arch-x86_64-*.pkg.tar.zst" >> /tmp/release-notes.md
             echo '```' >> /tmp/release-notes.md
             echo "" >> /tmp/release-notes.md
             echo "> Unofficial nightly build. Ladybird is pre-alpha software." >> /tmp/release-notes.md
