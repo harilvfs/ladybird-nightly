@@ -7,8 +7,6 @@
 
 Ladybird has [officially entered alpha](https://ladybird.org/posts/alpha/), with downloads for macOS and Linux. This repository is an independent project that builds Linux x86_64 nightlies from upstream `master`; these are not official Ladybird releases. The daily CI pipeline provides ready-to-run builds without requiring you to compile Ladybird yourself.
 
-<img src="https://raw.githubusercontent.com/harilvfs/assets/refs/heads/main/ladybird-browser/ladybird-preview.png" />
-
 > [!WARNING]
 > **Unofficial alpha build.** This project is not affiliated with or endorsed by Ladybird. Ladybird is alpha software: some websites may not work and the browser may crash. Security is not guaranteed. Use at your own risk, and avoid using it for sensitive browsing.
 >
