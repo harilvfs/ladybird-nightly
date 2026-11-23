@@ -5,16 +5,16 @@
 
 **Unofficial, automated nightly builds of the [Ladybird browser](https://github.com/LadybirdBrowser/ladybird) for Linux x86_64.**
 
-Ladybird doesn't publish official nightly binaries yet, and building it from source takes a lot of time and a correctly configured toolchain. This repo runs a daily CI pipeline that check upstream `master` branch and build with the latest commit hash, so you can get a ready-to-run Ladybird browser build without compiling on your own.
+Ladybird has [officially entered alpha](https://ladybird.org/posts/alpha/), with downloads for macOS and Linux. This repository is an independent project that builds Linux x86_64 nightlies from upstream `master`; these are not official Ladybird releases. The daily CI pipeline provides ready-to-run builds without requiring you to compile Ladybird yourself.
 
 <img src="https://raw.githubusercontent.com/harilvfs/assets/refs/heads/main/ladybird-browser/ladybird-preview.png" />
 
 > [!WARNING]
-> **Unofficial.** This is not affiliated with the Ladybird project in any way. Ladybird is pre-alpha software only suitable for developer use.
+> **Unofficial alpha build.** This project is not affiliated with or endorsed by Ladybird. Ladybird is alpha software: some websites may not work and the browser may crash. Security is not guaranteed. Use at your own risk, and avoid using it for sensitive browsing.
 >
-> Also, please don't use this repo's issue tab for reporting any bugs related to Ladybird do that on the official repo. https://github.com/LadybirdBrowser/ladybird
+> Report browser bugs to [Ladybird](https://github.com/LadybirdBrowser/ladybird) or use its in-browser site reporting. Use this repository's issues for problems with these nightly builds, packaging, or the installer.
 >
-> Instead, you can report bugs related to the install script or contribute any fixes related to this repo.
+> The official alpha includes its own rolling updates. These community nightlies are separate builds and may differ from it.
 
 ## Install
 
@@ -59,9 +59,11 @@ sudo pacman -S qt6-base
 sudo dnf install qt6-qtbase
 ```
 
-## Dark Theme (Linux)
+## Dark Theme (Linux, deprecated)
 
-Ladybird uses the Qt frontend on Linux. To make it respect your system's Qt theme, add these to your shell config:
+> **Deprecated:** Ladybird now manages its own appearance and theme. Change it in Ladybird's appearance settings. The Qt theme environment overrides below are kept for reference and may no longer work.
+
+Older builds used the Qt frontend on Linux. To make those builds respect your system's Qt theme, add these to your shell config:
 
 > [!NOTE]
 > Make sure you have `qt6ct` and `kvantum` installed and configured to use a dark theme.
@@ -117,11 +119,12 @@ This should be upstream Ladybird issue. See [ladybird#8989](https://github.com/L
 Builds should work fine if your CPUs are from ~2016 onwards.
 
 ## Why this exists
-- Official Ladybird nightly builds aren't available yet
-- It Makes Easier for you to track Ladybird's fast-moving development without setting up a local build environment
+
+- Ladybird's official alpha is available, and this project offers separate Linux x86_64 nightlies built from upstream `master`.
+- It makes it easier to try upstream changes without setting up a local build environment.
 
 ## Build Status
 
-Nightly builds may occasionally fail due to upstream changes in Ladybird or its dependencies. As ladybird is a pre-alpha project that is actively under development this is expected.
+Nightly builds may occasionally fail due to upstream changes in Ladybird or its dependencies. Ladybird is actively developed, and alpha software may have incomplete features, crashes, and compatibility issues.
 
 If the latest release is older than a few days, the build is likely broken. I will try to get it fixed as soon as possible.

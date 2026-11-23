@@ -378,7 +378,7 @@ jobs:
             echo "sudo pacman -U ./ladybird-nightly-arch-x86_64-*.pkg.tar.zst" >> /tmp/release-notes.md
             echo '```' >> /tmp/release-notes.md
             echo "" >> /tmp/release-notes.md
-            echo "> Unofficial nightly build. Ladybird is pre-alpha software." >> /tmp/release-notes.md
+            echo "> Unofficial nightly build of Ladybird alpha. Some sites may not work, crashes are possible, and security is not guaranteed. Use at your own risk." >> /tmp/release-notes.md
 
             gh release create "$TAG" \
               --repo "$GITHUB_REPOSITORY" \
