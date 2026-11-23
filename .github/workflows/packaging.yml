@@ -247,6 +247,27 @@ jobs:
             exit 1
           fi
 
+          # keep bundled libs private to avoid arch file conflicts.
+          PRIVATE_LIB="$STAGE/usr/lib/ladybird-nightly"
+          mkdir -p "$PRIVATE_LIB"
+          while IFS= read -r -d '' library; do
+            mv -- "$library" "$PRIVATE_LIB/"
+          done < <(find "$STAGE/usr/lib" -maxdepth 1 \( -type f -o -type l \) -name '*.so*' -print0)
+
+          # add local library paths to binaries and bundled libs.
+          while IFS= read -r -d '' elf; do
+            if file -b "$elf" | grep -q '^ELF '; then
+              case "$elf" in
+                "$STAGE/usr/lib/ladybird-nightly"/*)
+                  patchelf --add-rpath '$ORIGIN' "$elf"
+                  ;;
+                *)
+                  patchelf --add-rpath '$ORIGIN/../lib/ladybird-nightly' "$elf"
+                  ;;
+              esac
+            fi
+          done < <(find "$STAGE/usr/bin" "$STAGE/usr/libexec" "$PRIVATE_LIB" -type f -print0)
+
           # runtime dependencies: the system libraries the installed binaries link against,
           # mapped to the pacman packages that own them
           DEPENDS=$(
