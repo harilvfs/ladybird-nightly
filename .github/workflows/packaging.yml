@@ -2,9 +2,7 @@ name: Nightly Linux Packages
 
 run-name: Nightly Linux Packages from ${{ inputs.ref }}
 
-# Builds .deb (Ubuntu) and .rpm (Fedora) packages the same way upstream's
-# Build Release workflow does, but on free GitHub-hosted runners.
-# Manual trigger only for now; add a schedule once a run succeeds.
+# builds .deb (Ubuntu) and .rpm (Fedora) packages the same way upstream's does
 
 on:
   workflow_dispatch:
@@ -43,7 +41,6 @@ jobs:
           echo "short_sha=${SHA:0:7}" >> "$GITHUB_OUTPUT"
           echo "date=$(date -u +%Y%m%d)" >> "$GITHUB_OUTPUT"
 
-      # same packaging step as upstream: a source archive that carries a REVISION file
       - name: Package
         run: |
           name="ladybird"
@@ -103,7 +100,6 @@ jobs:
       - name: Install the build dependencies
         run: ./Meta/Docker/ci/install-build-dependencies.sh
 
-      # upstream's own build action: passes LADYBIRD_BASELINE_CPU_TARGET=ON, builds, installs
       - name: Build
         uses: ./.github/actions/build
         with:
@@ -183,7 +179,7 @@ jobs:
           tar -xf ./*-source.tar.xz --strip-components=1
           rm ./*-source.tar.xz
 
-      # upstream's dependency script only knows Ubuntu and Fedora, so this list is
+      # upstream's dependency script only knows Ubuntu and Fedora for now, so this list is
       # those two lists mapped to Arch package names
       - name: Install the build dependencies
         run: |
@@ -207,8 +203,7 @@ jobs:
           echo "RUSTUP_HOME=${RUSTUP_HOME}" >> "$GITHUB_ENV"
           echo "CARGO_HOME=${CARGO_HOME}" >> "$GITHUB_ENV"
 
-      # the build generates the WebAssembly spec tests, which needs wasm-tools; same pinned
-      # version and checksum that upstream's dependency script reads from the CI Dockerfile
+      # the build generates the WebAssembly spec tests, which needs wasm-tools;
       - name: Install wasm-tools
         run: |
           set -euo pipefail
