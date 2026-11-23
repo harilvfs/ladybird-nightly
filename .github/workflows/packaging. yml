@@ -1,0 +1,227 @@
+name: Nightly Linux Packages
+
+run-name: Nightly Linux Packages from ${{ inputs.ref }}
+
+# Builds .deb (Ubuntu) and .rpm (Fedora) packages the same way upstream's
+# Build Release workflow does, but on free GitHub-hosted runners.
+# Manual trigger only for now; add a schedule once a run succeeds.
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Ladybird branch, tag or full commit hash to build'
+        required: true
+        default: 'master'
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  Source:
+    name: Source
+    runs-on: ubuntu-latest
+
+    outputs:
+      artifact-id: ${{ steps.upload.outputs.artifact-id }}
+      date: ${{ steps.info.outputs.date }}
+      short_sha: ${{ steps.info.outputs.short_sha }}
+      sha: ${{ steps.info.outputs.sha }}
+
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          repository: LadybirdBrowser/ladybird
+          ref: ${{ inputs.ref }}
+
+      - name: Get commit info
+        id: info
+        run: |
+          SHA=$(git rev-parse HEAD)
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          echo "short_sha=${SHA:0:7}" >> "$GITHUB_OUTPUT"
+          echo "date=$(date -u +%Y%m%d)" >> "$GITHUB_OUTPUT"
+
+      # same packaging step as upstream: a source archive that carries a REVISION file
+      - name: Package
+        run: |
+          name="ladybird"
+          git archive --prefix= --add-virtual-file="${name}/REVISION:$(git rev-parse HEAD)" --prefix="${name}/" \
+            --output="${name}-source.tar" HEAD
+          xz -9 -T0 "${name}-source.tar"
+
+      - name: Upload
+        id: upload
+        uses: actions/upload-artifact@v7
+        with:
+          path: '*-source.tar.xz'
+          archive: false
+          if-no-files-found: error
+
+  Build:
+    name: ${{ matrix.system }}, x86_64
+    needs: Source
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+
+    container:
+      image: ${{ matrix.image }}
+      options: --ulimit core=1
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - system: 'Ubuntu 26.04'
+            slug: 'ubuntu-26.04'
+            image: 'docker.io/library/ubuntu:26.04'
+            packages: 'DEB'
+
+          - system: 'Fedora 44'
+            slug: 'fedora-44'
+            image: 'docker.io/library/fedora:44'
+            packages: 'RPM'
+
+    steps:
+      - name: Download the source
+        uses: actions/download-artifact@v8
+        with:
+          artifact-ids: ${{ needs.Source.outputs.artifact-id }}
+
+      - name: Install xz to unpack the source
+        if: ${{ startsWith(matrix.system, 'Ubuntu') }}
+        run: |
+          apt-get update -o APT::Update::Error-Mode=any
+          apt-get install -y --no-install-recommends xz-utils
+
+      - name: Unpack the source
+        run: |
+          tar -xf ./*-source.tar.xz --strip-components=1
+          rm ./*-source.tar.xz
+
+      - name: Install the build dependencies
+        run: ./Meta/Docker/ci/install-build-dependencies.sh
+
+      # upstream's own build action: passes LADYBIRD_BASELINE_CPU_TARGET=ON, builds, installs
+      - name: Build
+        uses: ./.github/actions/build
+        with:
+          os: 'Linux'
+          arch: 'x86_64'
+          toolchain: 'Clang'
+          build_preset: 'Distribution'
+          use_caches: false
+
+      - name: Package for ${{ matrix.system }}
+        working-directory: ${{ github.workspace }}/Build
+        run: |
+          cpack -G "${{ matrix.packages }}" -B packages \
+            -D CPACK_COMPONENTS_ALL="ladybird_Runtime;ladybird_SystemIntegration;ladybird_SystemSymbols"
+
+      - name: Collect the runtime package
+        working-directory: ${{ github.workspace }}/Build/packages
+        shell: bash
+        env:
+          DATE: ${{ needs.Source.outputs.date }}
+          SHORT_SHA: ${{ needs.Source.outputs.short_sha }}
+          SLUG: ${{ matrix.slug }}
+          PACKAGE_TYPE: ${{ matrix.packages }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+
+          echo "Packages produced:"
+          ls -lh
+
+          files=()
+          if [[ "$PACKAGE_TYPE" == "DEB" ]]; then
+            EXT="deb"
+            files=(ladybird_*.deb)
+          else
+            EXT="rpm"
+            for f in ladybird-*.rpm; do
+              if [[ "$f" != ladybird-debuginfo-* ]]; then
+                files+=("$f")
+              fi
+            done
+          fi
+
+          if [[ ${#files[@]} -ne 1 ]]; then
+            echo "error: expected exactly one runtime package, found ${#files[@]}" >&2
+            exit 1
+          fi
+
+          mkdir -p "${GITHUB_WORKSPACE}/out"
+          cp "${files[0]}" "${GITHUB_WORKSPACE}/out/ladybird-nightly-${SLUG}-x86_64-${DATE}-${SHORT_SHA}.${EXT}"
+
+      - name: Upload
+        uses: actions/upload-artifact@v7
+        with:
+          name: pkg-${{ matrix.slug }}
+          path: out/*
+          if-no-files-found: error
+
+  Release:
+    name: Publish to GitHub Release
+    needs: [Source, Build]
+    if: ${{ !cancelled() && needs.Source.result == 'success' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download the packages
+        uses: actions/download-artifact@v8
+        with:
+          pattern: pkg-*
+          path: out
+          merge-multiple: true
+
+      # published as a pre-release on purpose: GitHub's "latest release" skips pre-releases,
+      # so the tarball nightly and install.sh keep working unchanged
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DATE: ${{ needs.Source.outputs.date }}
+          SHORT_SHA: ${{ needs.Source.outputs.short_sha }}
+          SHA: ${{ needs.Source.outputs.sha }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+
+          files=(out/*)
+          if [[ ${#files[@]} -eq 0 ]]; then
+            echo "error: no packages were built, nothing to publish" >&2
+            exit 1
+          fi
+
+          TAG="packages-${DATE}-${SHORT_SHA}"
+
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Uploading to existing release: $TAG"
+            gh release upload "$TAG" --repo "$GITHUB_REPOSITORY" --clobber "${files[@]}"
+          else
+            echo "**Ladybird nightly Linux packages**" > /tmp/release-notes.md
+            echo "" >> /tmp/release-notes.md
+            echo "- Upstream commit: [${SHORT_SHA}](https://github.com/LadybirdBrowser/ladybird/commit/${SHA})" >> /tmp/release-notes.md
+            echo "- Built: ${DATE}" >> /tmp/release-notes.md
+            echo "- Platform: Linux x86_64" >> /tmp/release-notes.md
+            echo "" >> /tmp/release-notes.md
+            echo "**Ubuntu:**" >> /tmp/release-notes.md
+            echo '```bash' >> /tmp/release-notes.md
+            echo "sudo apt install ./ladybird-nightly-ubuntu-26.04-x86_64-*.deb" >> /tmp/release-notes.md
+            echo '```' >> /tmp/release-notes.md
+            echo "" >> /tmp/release-notes.md
+            echo "**Fedora:**" >> /tmp/release-notes.md
+            echo '```bash' >> /tmp/release-notes.md
+            echo "sudo dnf install ./ladybird-nightly-fedora-44-x86_64-*.rpm" >> /tmp/release-notes.md
+            echo '```' >> /tmp/release-notes.md
+            echo "" >> /tmp/release-notes.md
+            echo "> Unofficial nightly build. Ladybird is pre-alpha software." >> /tmp/release-notes.md
+
+            gh release create "$TAG" \
+              --repo "$GITHUB_REPOSITORY" \
+              --prerelease \
+              --title "Linux packages ${DATE} (${SHORT_SHA})" \
+              --notes-file /tmp/release-notes.md \
+              "${files[@]}"
+          fi
