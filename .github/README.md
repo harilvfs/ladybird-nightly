@@ -59,7 +59,7 @@ sudo pacman -S qt6-base
 sudo dnf install qt6-qtbase
 ```
 
-## Dark Theme (Linux, deprecated)
+## ⚠️ Dark Theme (Linux, deprecated)
 
 > **Deprecated:** Ladybird now manages its own appearance and theme. Change it in Ladybird's appearance settings. The Qt theme environment overrides below are kept for reference and may no longer work.
 
