@@ -1,4 +1,5 @@
 [![Nightly Linux Packages](https://github.com/harilvfs/ladybird-nightly/actions/workflows/packaging.yml/badge.svg)](https://github.com/harilvfs/ladybird-nightly/actions/workflows/packaging.yml)
+[![Latest Release](https://img.shields.io/github/v/release/harilvfs/ladybird-nightly)](https://github.com/harilvfs/ladybird-nightly/releases)
 [![Downloads](https://img.shields.io/github/downloads/harilvfs/ladybird-nightly/total)](https://github.com/harilvfs/ladybird-nightly/releases)
 
 # Ladybird Nightly
