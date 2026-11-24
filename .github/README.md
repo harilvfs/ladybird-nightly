@@ -59,7 +59,7 @@ curl -fsSL https://raw.githubusercontent.com/harilvfs/ladybird-nightly/main/inst
 
 ## Runtime requirements (Linux)
 
-```sh
+```
 # Ubuntu/Debian
 sudo apt install qt6-base-dev
 
@@ -70,9 +70,9 @@ sudo pacman -S qt6-base
 sudo dnf install qt6-qtbase
 ```
 
-## ⚠️ Dark Theme (Linux, deprecated)
+## Dark Theme (Linux)
 
-> **Deprecated:** Ladybird now manages its own appearance and theme. Change it in Ladybird's appearance settings. The Qt theme environment overrides below are kept for reference and may no longer work.
+> ⚠️ **Deprecated:** Ladybird now manages its own appearance and theme. Change it in Ladybird's appearance settings. The Qt theme environment overrides below are kept for reference and may no longer work.
 
 Older builds used the Qt frontend on Linux. To make those builds respect your system's Qt theme, add these to your shell config:
 
