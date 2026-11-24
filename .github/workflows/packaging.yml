@@ -234,31 +234,32 @@ jobs:
         run: |
           set -euo pipefail
 
-          # install only the runtime and desktop integration files under /usr
+          # install runtime in /opt and desktop files in /usr
           STAGE="${GITHUB_WORKSPACE}/pkgroot"
           rm -rf "$STAGE"
-          for component in ladybird_Runtime ladybird_SystemIntegration; do
-            DESTDIR="$STAGE" cmake --install Build --strip --prefix /usr --component "$component"
-          done
+          DESTDIR="$STAGE" cmake --install Build --strip --prefix /opt/ladybird --component ladybird_Runtime
+          DESTDIR="$STAGE" cmake --install Build --strip --prefix /usr --component ladybird_SystemIntegration
 
-          if [[ ! -x "$STAGE/usr/bin/Ladybird" ]]; then
-            echo "error: usr/bin/Ladybird is missing, install layout:" >&2
+          if [[ ! -x "$STAGE/opt/ladybird/bin/Ladybird" ]]; then
+            echo "error: opt/ladybird/bin/Ladybird is missing, install layout:" >&2
             find "$STAGE" -maxdepth 3 | sort >&2
             exit 1
           fi
 
-          # keep bundled libs private to avoid arch file conflicts.
-          PRIVATE_LIB="$STAGE/usr/lib/ladybird-nightly"
+          # keep bundled libs private
+          PRIVATE_LIB="$STAGE/opt/ladybird/lib/ladybird-nightly"
           mkdir -p "$PRIVATE_LIB"
-          while IFS= read -r -d '' library; do
-            mv -- "$library" "$PRIVATE_LIB/"
-          done < <(find "$STAGE/usr/lib" -maxdepth 1 \( -type f -o -type l \) -name '*.so*' -print0)
+          if [[ -d "$STAGE/opt/ladybird/lib" ]]; then
+            while IFS= read -r -d '' library; do
+              mv -- "$library" "$PRIVATE_LIB/"
+            done < <(find "$STAGE/opt/ladybird/lib" -maxdepth 1 \( -type f -o -type l \) -name '*.so*' -print0)
+          fi
 
-          # add local library paths to binaries and bundled libs.
+          # set rpaths for bundled libs
           while IFS= read -r -d '' elf; do
             if file -b "$elf" | grep -q '^ELF '; then
               case "$elf" in
-                "$STAGE/usr/lib/ladybird-nightly"/*)
+                "$PRIVATE_LIB"/*)
                   patchelf --add-rpath '$ORIGIN' "$elf"
                   ;;
                 *)
@@ -266,12 +267,16 @@ jobs:
                   ;;
               esac
             fi
-          done < <(find "$STAGE/usr/bin" "$STAGE/usr/libexec" "$PRIVATE_LIB" -type f -print0)
+          done < <(find "$STAGE/opt/ladybird/bin" "$STAGE/opt/ladybird/libexec" "$PRIVATE_LIB" -type f -print0)
+
+          # add a terminal command symlink
+          mkdir -p "$STAGE/usr/bin"
+          ln -s /opt/ladybird/bin/Ladybird "$STAGE/usr/bin/ladybird"
 
           # runtime dependencies: the system libraries the installed binaries link against,
           # mapped to the pacman packages that own them
           DEPENDS=$(
-            for f in "$STAGE"/usr/bin/* "$STAGE"/usr/libexec/*; do
+            for f in "$STAGE"/opt/ladybird/bin/* "$STAGE"/opt/ladybird/libexec/*; do
               if [[ -f "$f" && -x "$f" ]]; then
                 ldd "$f" 2>/dev/null || true
               fi
@@ -378,7 +383,9 @@ jobs:
             echo "sudo pacman -U ./ladybird-nightly-arch-x86_64-*.pkg.tar.zst" >> /tmp/release-notes.md
             echo '```' >> /tmp/release-notes.md
             echo "" >> /tmp/release-notes.md
-            echo "> Unofficial nightly build of Ladybird alpha. Some sites may not work, crashes are possible, and security is not guaranteed. Use at your own risk." >> /tmp/release-notes.md
+            echo "The Arch package installs the runtime under /opt/ladybird and provides the ladybird terminal command." >> /tmp/release-notes.md
+            echo "" >> /tmp/release-notes.md
+            echo "> Unofficial Ladybird nightly. Some sites may not work, crashes are possible, and security is not guaranteed. Use at your own risk." >> /tmp/release-notes.md
 
             gh release create "$TAG" \
               --repo "$GITHUB_REPOSITORY" \
