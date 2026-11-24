@@ -5,24 +5,29 @@
 
 **Unofficial, automated nightly builds of the [Ladybird browser](https://github.com/LadybirdBrowser/ladybird) for Linux x86_64.**
 
-Ladybird has [officially entered alpha](https://ladybird.org/posts/alpha/), with downloads for macOS and Linux. This repository is an independent project that builds Linux x86_64 nightlies from upstream `master`; these are not official Ladybird releases. The daily CI pipeline provides ready-to-run builds without requiring you to compile Ladybird yourself.
+Ladybird has [officially entered alpha](https://ladybird.org/posts/alpha/), with downloads for macOS and Linux. This independent project builds Linux x86_64 nightlies from upstream `master`. The daily CI pipeline provides ready-to-run builds without requiring you to compile Ladybird yourself.
 
-> [!WARNING]
-> **Unofficial alpha build.** This project is not affiliated with or endorsed by Ladybird. Ladybird is alpha software: some websites may not work and the browser may crash. Security is not guaranteed. Use at your own risk, and avoid using it for sensitive browsing.
+> [!NOTE]
+> **Unofficial nightly build.** This project is not affiliated with or endorsed by Ladybird. Some websites may not work and the browser may crash. Security is not guaranteed. Use at your own risk, and avoid using it for sensitive browsing.
 >
 > Report browser bugs to [Ladybird](https://github.com/LadybirdBrowser/ladybird) or use its in-browser site reporting. Use this repository's issues for problems with these nightly builds, packaging, or the installer.
 >
-> The official alpha includes its own rolling updates. These community nightlies are separate builds and may differ from it.
+> These nightlies are separate builds from Ladybird's official releases and may differ from them.
 
 ## Install
+
+### Automatic install
+
+The installer selects a distro package on supported systems and uses the tarball elsewhere:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/harilvfs/ladybird-nightly/main/install.sh | bash
 ```
 
-Custom install path:
+To force the compiled distro-independent build, pass `--tarball`:
+
 ```sh
-curl -fsSL https://raw.githubusercontent.com/harilvfs/ladybird-nightly/main/install.sh | bash -s -- --dir ~/.local/ladybird # place your desire dir
+curl -fsSL https://raw.githubusercontent.com/harilvfs/ladybird-nightly/main/install.sh | bash -s -- --tarball
 ```
 
 Then run:
@@ -31,18 +36,14 @@ ladybird   # with terminal output
 lb         # silent (no output good for Rofi and daily use)
 ```
 
-## Experimental distro packages
+The installer automatically uses a distro package on Ubuntu 26.04, Fedora 44, and Arch Linux or Arch-based systems. These packages are published as prereleases on the [releases page](https://github.com/harilvfs/ladybird-nightly/releases); you do not need to download or install them manually.
 
 > [!WARNING]
-> These `.deb`, `.rpm`, and Arch packages are experimental and are being tested. They may fail to install, may not run, or may be unstable. Use them at your own risk.
+> Packages are tested on the mainline target distributions: Ubuntu 26.04, Fedora 44, and Arch Linux. Although Ubuntu is based on Debian, the Ubuntu package may not work on Debian because Debian releases can have older Qt and glibc versions. Compatibility with Ubuntu-based, Fedora-based, and Arch-based distributions is not guaranteed.
 
-The Ubuntu and Fedora packaging builds use Ladybird's upstream build dependencies and packaging setup as a base. The Arch package, including its dependency mapping and packaging steps, is maintained by this project and is still under testing. Do not expect the Arch package to work reliably yet.
+The Ubuntu and Fedora packages follow Ladybird upstream's build dependencies. Upstream does not directly support Arch, so I maintain the Arch dependency mapping and packaging. The Arch package currently works, but upstream changes may require updates. I will keep working to maintain compatibility, though it may not always work.
 
-To try a package, open the [releases page](https://github.com/harilvfs/ladybird-nightly/releases), choose the newest prerelease titled **Linux packages**, and download the file for your distribution:
-
-- **Ubuntu:** use the `.deb` built for Ubuntu 26.04. Do not expect it to work on Debian, especially Debian 12, or older Ubuntu releases. They may not provide the required Qt, glibc, and other library versions.
-- **Fedora:** use the `.rpm` built for Fedora 44. It may not install on older Fedora versions because they lack the required Qt and glibc versions.
-- **Arch Linux:** the `.pkg.tar.zst` package is experimental and may fail to install or run. It is currently being tested.
+On other systems, the installer uses the compiled distro-independent tarball build. It has not been tested on distributions such as openSUSE or NixOS, on BSD, or on every other Linux distribution, so I cannot guarantee it will work there yet. If you run into an installation or runtime issue, please [open an issue](https://github.com/harilvfs/ladybird-nightly/issues), especially if you are using a derivative distribution. Include your distro, version, and the error you encountered.
 
 ## Uninstall
 
@@ -50,9 +51,8 @@ To try a package, open the [releases page](https://github.com/harilvfs/ladybird-
 curl -fsSL https://raw.githubusercontent.com/harilvfs/ladybird-nightly/main/install.sh | bash -s -- --uninstall
 ```
 
-The `uninstall` flag removes the install directory along side other file's that was installed on your system. 
+The `--uninstall` flag removes the tarball files and any installed Ladybird distro package it detects. If you used a custom install directory, pass it with `--dir`:
 
-If you used a custom install path, pass it with `--dir`:
 ```sh
 curl -fsSL https://raw.githubusercontent.com/harilvfs/ladybird-nightly/main/install.sh | bash -s -- --uninstall --dir ~/.local/ladybird # place your actual dir
 ```
@@ -60,7 +60,7 @@ curl -fsSL https://raw.githubusercontent.com/harilvfs/ladybird-nightly/main/inst
 ## Runtime requirements (Linux)
 
 ```
-# Ubuntu/Debian
+# Ubuntu
 sudo apt install qt6-base-dev
 
 # Arch
@@ -131,11 +131,11 @@ Builds should work fine if your CPUs are from ~2016 onwards.
 
 ## Why this exists
 
-- Ladybird's official alpha is available, and this project offers separate Linux x86_64 nightlies built from upstream `master`.
+- This project offers Linux x86_64 nightlies built from upstream `master`.
 - It makes it easier to try upstream changes without setting up a local build environment.
 
 ## Build Status
 
-Nightly builds may occasionally fail due to upstream changes in Ladybird or its dependencies. Ladybird is actively developed, and alpha software may have incomplete features, crashes, and compatibility issues.
+Nightly builds may occasionally fail due to upstream changes in Ladybird or its dependencies. Features may be incomplete, and crashes or compatibility issues are possible.
 
 If the latest release is older than a few days, the build is likely broken. I will try to get it fixed as soon as possible.

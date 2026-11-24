@@ -263,7 +263,7 @@ jobs:
           echo "curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/main/install.sh | bash" >> /tmp/release-notes.md
           echo '```' >> /tmp/release-notes.md
           echo "" >> /tmp/release-notes.md
-          echo "> Unofficial nightly build of Ladybird alpha. Some sites may not work, crashes are possible, and security is not guaranteed. Use at your own risk." >> /tmp/release-notes.md
+          echo "> Unofficial Ladybird nightly. Some sites may not work, crashes are possible, and security is not guaranteed. Use at your own risk." >> /tmp/release-notes.md
 
           gh release create "$TAG" \
             --repo "${{ github.repository }}" \
