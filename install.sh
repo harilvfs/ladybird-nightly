@@ -283,7 +283,7 @@ cat >"$DESKTOP_DIR/ladybird-nightly.desktop" <<EOF
 Name=Ladybird (Nightly)
 Comment=Truly independent web browser
 Exec="$LAUNCHER" %u
-TryExec="$LAUNCHER"
+TryExec=$LAUNCHER
 Icon=$ICON_DIR/ladybird.png
 Type=Application
 Categories=Network;WebBrowser;
