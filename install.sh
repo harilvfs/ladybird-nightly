@@ -265,6 +265,16 @@ echo "Symlinked: $LOCAL_BIN/ladybird -> $LAUNCHER"
 ln -sf "$LAUNCHER" "$LOCAL_BIN/lb"
 echo "Symlinked: $LOCAL_BIN/lb -> $LAUNCHER"
 
+# install the icon before writing the desktop entry
+ICON_DIR="$HOME/.local/share/icons/hicolor/256x256/apps"
+mkdir -p "$ICON_DIR"
+ICON_URL="https://raw.githubusercontent.com/$REPO/main/icons/ladybird.png"
+if curl -fsSL -o "$ICON_DIR/ladybird.png" "$ICON_URL"; then
+  echo "Installed: $ICON_DIR/ladybird.png"
+else
+  echo "warning: could not download ladybird icon. Desktop entry may show a generic icon."
+fi
+
 # rofi desktop entry
 DESKTOP_DIR="$HOME/.local/share/applications"
 mkdir -p "$DESKTOP_DIR"
@@ -274,22 +284,13 @@ Name=Ladybird (Nightly)
 Comment=Truly independent web browser
 Exec="$LAUNCHER" %u
 TryExec="$LAUNCHER"
-Icon=$HOME/.local/share/icons/hicolor/256x256/apps/ladybird.png
+Icon=$ICON_DIR/ladybird.png
 Type=Application
 Categories=Network;WebBrowser;
 Terminal=false
 StartupWMClass=Ladybird
 EOF
 echo "Installed: $DESKTOP_DIR/ladybird-nightly.desktop"
-
-ICON_DIR="$HOME/.local/share/icons/hicolor/256x256/apps"
-mkdir -p "$ICON_DIR"
-ICON_URL="https://raw.githubusercontent.com/$REPO/main/icons/ladybird.png"
-if curl -fsSL -o "$ICON_DIR/ladybird.png" "$ICON_URL"; then
-  echo "Installed: $ICON_DIR/ladybird.png"
-else
-  echo "warning: could not download ladybird icon. Desktop entry may show a generic icon."
-fi
 
 if ! echo "$PATH" | tr ':' '\n' | grep -qx "$LOCAL_BIN"; then
   echo ""
