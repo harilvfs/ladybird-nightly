@@ -1,10 +1,12 @@
 name: Nightly Linux Packages
 
-run-name: Nightly Linux Packages from ${{ inputs.ref }}
+run-name: Nightly Linux Packages from ${{ inputs.ref || 'master' }}
 
-# builds .deb (Ubuntu) and .rpm (Fedora) packages the same way upstream's does
+# build ubuntu and fedora packages from upstream setup; maintain arch packaging here
 
 on:
+  schedule:
+    - cron: '0 2 * * *'
   workflow_dispatch:
     inputs:
       ref:
@@ -31,7 +33,7 @@ jobs:
       - uses: actions/checkout@v7.0.1
         with:
           repository: LadybirdBrowser/ladybird
-          ref: ${{ inputs.ref }}
+          ref: ${{ inputs.ref || 'master' }}
 
       - name: Get commit info
         id: info
@@ -338,8 +340,7 @@ jobs:
           path: out
           merge-multiple: true
 
-      # published as a pre-release on purpose: GitHub's "latest release" skips pre-releases,
-      # so the tarball nightly and install.sh keep working unchanged
+      # publish supported distro packages as regular releases
       - name: Publish
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -389,7 +390,6 @@ jobs:
 
             gh release create "$TAG" \
               --repo "$GITHUB_REPOSITORY" \
-              --prerelease \
               --title "Linux packages ${DATE} (${SHORT_SHA})" \
               --notes-file /tmp/release-notes.md \
               "${files[@]}"

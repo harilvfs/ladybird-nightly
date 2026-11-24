@@ -1,8 +1,8 @@
+# tarball publishing is paused; nightly distro releases are published by packaging.yml
+
 name: Nightly Linux Build
 
 on:
-  schedule:
-    - cron: '0 2 * * *'
   workflow_dispatch:
 
 permissions:
@@ -10,6 +10,7 @@ permissions:
 
 jobs:
   check-upstream:
+    if: ${{ false }}
     name: Check for new upstream commits
     runs-on: ubuntu-latest
     outputs:
