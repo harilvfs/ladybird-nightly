@@ -16,6 +16,12 @@ Ladybird has [officially entered alpha](https://ladybird.org/posts/alpha/), with
 
 ## Install
 
+> [!CAUTION]
+> **Breaking change:** I am pausing standalone builds and releases for now.
+> They have had issues across Linux distributions, and maintaining separate fixes without upstream support for each distribution is not practical.
+> Nightly installs are available only as distro packages for the supported systems listed below.
+> If you run into an issue, especially on a derivative distribution, please [open an issue](https://github.com/harilvfs/ladybird-nightly/issues) with your distro, version, and the error.
+
 ### Automatic install
 
 The installer installs a distro package on supported systems:
@@ -36,8 +42,6 @@ The installer automatically uses a distro package on Ubuntu 26.04, Fedora 44, an
 > Packages are tested on the mainline target distributions: Ubuntu 26.04, Fedora 44, and Arch Linux. Although Ubuntu is based on Debian, the Ubuntu package may not work on Debian because Debian releases can have older Qt and glibc versions. Compatibility with Ubuntu-based, Fedora-based, and Arch-based distributions is not guaranteed.
 
 The Ubuntu and Fedora packages follow Ladybird upstream's build dependencies. Upstream does not directly support Arch, so I maintain the Arch dependency mapping and packaging. The Arch package currently works, but upstream changes may require updates. I will keep working to maintain compatibility, though it may not always work.
-
-I am pausing standalone builds and releases for now. They have had issues across Linux distributions, and maintaining separate fixes without upstream support for each distribution is not practical. Nightly installs are available only as distro packages for the supported systems listed above. If you run into an issue, especially on a derivative distribution, please [open an issue](https://github.com/harilvfs/ladybird-nightly/issues) with your distro, version, and the error.
 
 ## Uninstall
 
