@@ -81,10 +81,6 @@ command -v curl &>/dev/null || {
   echo "error: curl is required." >&2
   exit 1
 }
-command -v jq &>/dev/null || {
-  echo "error: jq is required." >&2
-  exit 1
-}
 
 OS="$(uname -s)"
 ARCH="$(uname -m)"
@@ -105,17 +101,22 @@ ARCH="$(uname -m)"
 DISTRO_ID="${ID:-}"
 DISTRO_ID_LIKE="${ID_LIKE:-}"
 DISTRO_VERSION="${VERSION_ID:-}"
-PACKAGE_PATTERN=""
+ASSET_PREFIX=""
+PACKAGE_EXT=""
 PACKAGE_TYPE=""
 
+# asset names are ladybird-nightly-<distro>-x86_64-<date>-<sha>.<ext>, as named by the packages workflow
 if [[ "$DISTRO_ID" == "ubuntu" && "$DISTRO_VERSION" == "26.04" ]]; then
-  PACKAGE_PATTERN='ubuntu-26\.04-x86_64.*\.deb$'
+  ASSET_PREFIX="ladybird-nightly-ubuntu-26.04-x86_64"
+  PACKAGE_EXT="deb"
   PACKAGE_TYPE="deb"
 elif [[ "$DISTRO_ID" == "fedora" && "$DISTRO_VERSION" == "44" ]]; then
-  PACKAGE_PATTERN='fedora-44-x86_64.*\.rpm$'
+  ASSET_PREFIX="ladybird-nightly-fedora-44-x86_64"
+  PACKAGE_EXT="rpm"
   PACKAGE_TYPE="rpm"
 elif [[ " $DISTRO_ID $DISTRO_ID_LIKE " == *" arch "* ]]; then
-  PACKAGE_PATTERN='arch-x86_64.*\.pkg\.tar\.zst$'
+  ASSET_PREFIX="ladybird-nightly-arch-x86_64"
+  PACKAGE_EXT="pkg.tar.zst"
   PACKAGE_TYPE="pacman"
 else
   echo "error: no Ladybird nightly package is available for $DISTRO_ID ${DISTRO_VERSION}." >&2
@@ -124,16 +125,37 @@ else
 fi
 
 echo "Looking for a package built for $DISTRO_ID ${DISTRO_VERSION} ..."
-RELEASES_JSON=$(curl -fsSL "https://api.github.com/repos/${REPO}/releases?per_page=30") || {
-  echo "error: could not fetch package release information." >&2
+
+# read the release tags from the public atom feed. unlike api.github.com it has no
+# 60-requests-per-hour limit per IP, which can causes "403" errors from the API
+FEED=$(curl -fsSL "https://github.com/${REPO}/releases.atom") || {
+  echo "error: could not fetch the release list from github.com/${REPO}." >&2
   exit 1
 }
-PACKAGE_URL=$(echo "$RELEASES_JSON" |
-  jq -r --arg re "$PACKAGE_PATTERN" '[.[] | .assets[] | select(.name | test($re)) | .browser_download_url][0] // empty')
+TAGS=$(echo "$FEED" |
+  grep -o 'releases/tag/packages-[0-9]*-[0-9a-f]*' |
+  sed 's#releases/tag/##' |
+  awk '!seen[$0]++' || true)
+
+[[ -n "$TAGS" ]] || {
+  echo "error: no package releases were found." >&2
+  echo "The nightly package workflow may not have published one yet." >&2
+  exit 1
+}
+
+# newest first; use the first release that has a package for this distro
+PACKAGE_URL=""
+for tag in $TAGS; do
+  url="https://github.com/${REPO}/releases/download/${tag}/${ASSET_PREFIX}-${tag#packages-}.${PACKAGE_EXT}"
+  # one-byte range request: the signed download links do not accept HEAD requests
+  if curl -fsSL -r 0-0 -o /dev/null "$url" 2>/dev/null; then
+    PACKAGE_URL="$url"
+    break
+  fi
+done
 
 [[ -n "$PACKAGE_URL" ]] || {
-  echo "error: no matching distro package was found in recent releases." >&2
-  echo "The nightly package workflow may not have published one yet." >&2
+  echo "error: no package for $DISTRO_ID ${DISTRO_VERSION} was found in recent releases." >&2
   exit 1
 }
 
