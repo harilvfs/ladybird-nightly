@@ -1,0 +1,3 @@
+site/*.html linguist-documentation=false
+site/*.css linguist-documentation=false
+site/*.js linguist-documentation=false

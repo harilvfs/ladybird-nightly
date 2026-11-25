@@ -1,0 +1,76 @@
+name: Deploy nightly site
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "site/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["Nightly Linux Packages"]
+    types: [completed]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - name: Build package index from release feed
+        run: |
+          set -euo pipefail
+          curl -fsSL https://github.com/harilvfs/ladybird-nightly/releases.atom -o /tmp/releases.atom
+          python3 - <<'PY'
+          import json
+          import re
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
+
+          ns = {"atom": "http://www.w3.org/2005/Atom"}
+          feed = ET.parse("/tmp/releases.atom").getroot()
+          releases = []
+          package_kinds = {
+              "ubuntu": ("ladybird-nightly-ubuntu-26.04-x86_64", "deb"),
+              "fedora": ("ladybird-nightly-fedora-44-x86_64", "rpm"),
+              "arch": ("ladybird-nightly-arch-x86_64", "pkg.tar.zst"),
+          }
+
+          for entry in feed.findall("atom:entry", ns):
+              link = entry.find("atom:link", ns)
+              match = re.search(r"/tag/(packages-\d{8}-[0-9a-f]+)$", link.attrib["href"] if link is not None else "")
+              if not match:
+                  continue
+              tag = match.group(1)
+              suffix = tag.removeprefix("packages-")
+              packages = {}
+              for distro, (prefix, extension) in package_kinds.items():
+                  filename = f"{prefix}-{suffix}.{extension}"
+                  packages[distro] = {
+                      "name": filename,
+                      "url": f"https://github.com/harilvfs/ladybird-nightly/releases/download/{tag}/{filename}",
+                  }
+              published = entry.findtext("atom:published", default="", namespaces=ns)
+              releases.append({"tag": tag, "published_at": published, "packages": packages})
+
+          Path("site/releases.json").write_text(json.dumps(releases, separators=(",", ":")) + "\n")
+          PY
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
