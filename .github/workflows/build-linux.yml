@@ -118,7 +118,7 @@ jobs:
 
       - name: Cache Qt
         id: cache-qt
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: /opt/qt
           key: qt-6.10.0-linux-gcc64
@@ -149,7 +149,7 @@ jobs:
           echo "Checked out: $(git log -1 --oneline)"
 
       - name: Cache vcpkg
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ladybird/Build/release/vcpkg_installed
@@ -159,7 +159,7 @@ jobs:
             vcpkg-linux-x64-
 
       - name: Cache ccache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cache/ccache
           key: ccache-linux-x64-${{ env.UPSTREAM_SHA }}
