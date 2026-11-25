@@ -43,14 +43,15 @@ toTop.addEventListener("click", () => {
   window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
 });
 
-document.querySelector("#copy-command").addEventListener("click", async (event) => {
-  const button = event.currentTarget;
-  const command = document.querySelector("#install-command").textContent;
-  try {
-    await navigator.clipboard.writeText(command);
-    button.textContent = "COPIED";
-    window.setTimeout(() => { button.textContent = "COPY"; }, 1500);
-  } catch {
-    button.textContent = "SELECT COMMAND";
-  }
+document.querySelectorAll("[data-copy-target]").forEach((button) => {
+  button.addEventListener("click", async () => {
+    const command = document.getElementById(button.dataset.copyTarget).textContent;
+    try {
+      await navigator.clipboard.writeText(command);
+      button.textContent = "COPIED";
+      window.setTimeout(() => { button.textContent = "COPY"; }, 1500);
+    } catch {
+      button.textContent = "SELECT COMMAND";
+    }
+  });
 });
