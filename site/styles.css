@@ -113,13 +113,14 @@ a { color: inherit; }
 .section h2, .install-section h2, .about-section h2 { margin: 18px 0 0; font-size: 54px; line-height: 1.02; letter-spacing: -.065em; font-weight: 600; }
 .section-heading > p { max-width: 315px; margin: 0 0 4px 20px; color: var(--muted); font-size: 13px; line-height: 1.7; }
 .mobile-break { display: none; }
-.download-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
-.download-card { min-height: 244px; position: relative; padding: 23px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+.download-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.download-card { min-height: 244px; position: relative; display: flex; flex-direction: column; padding: 23px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
 .card-top { display: flex; align-items: center; justify-content: space-between; min-height: 42px; }
 .distro-icon { display: block; width: 42px; height: 42px; object-fit: contain; }
 .download-card h3 { margin: 20px 0 8px; font-size: 22px; letter-spacing: -.04em; }
 .download-card h3 span { margin-left: 4px; color: var(--muted); font-size: 12px; font-weight: 400; letter-spacing: 0; }
 .download-card p { margin: 0 0 23px; color: var(--muted); font-size: 12px; }
+.download-card .button { align-self: flex-start; margin-top: auto; }
 .download-card code, .terminal code { color: var(--violet); font-family: var(--mono); }
 .support-note { display: flex; gap: 12px; align-items: flex-start; margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--line); }
 .note-icon { flex: none; color: var(--blue-deep); font: 600 13px var(--sans); }
@@ -195,6 +196,11 @@ a { color: inherit; }
 :root[data-theme="light"] .terminal-command button { border-color: #c9c0e5; background: #f4f0ff; color: var(--indigo); }
 :root[data-theme="light"] .site-footer { background: #f0eff8; }
 :focus-visible { outline: 2px solid var(--violet); outline-offset: 3px; }
+
+/* four cards need two columns before the mobile breakpoint */
+@media (max-width: 1000px) {
+  .download-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 
 @media (max-width: 760px) {
   .wrap { width: min(100% - 38px, 560px); }

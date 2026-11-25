@@ -333,9 +333,203 @@ jobs:
           path: out/*
           if-no-files-found: error
 
+  BuildOpenSUSE:
+    name: openSUSE Tumbleweed, x86_64
+    needs: Source
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+
+    container:
+      image: registry.opensuse.org/opensuse/tumbleweed:latest
+      options: --ulimit core=1
+
+    steps:
+      # opensuse deps; upstream's script only handles ubuntu and fedora
+      # extra x11/wayland/vulkan headers are needed by vcpkg's angle
+      - name: Install the build dependencies
+        run: |
+          set -euo pipefail
+          zypper --non-interactive refresh
+          zypper --non-interactive install --no-recommends \
+            autoconf autoconf-archive automake ca-certificates-mozilla ccache clang22 cmake \
+            curl diffutils file findutils gcc16 gcc16-c++ git glslang-devel gzip libdrm-devel \
+            liberation-fonts libglvnd-devel libpulse-devel libtool lld22 make nasm \
+            ncurses-devel ninja patch patchelf perl pkgconf-pkg-config python3 qt6-base-devel \
+            qt6-positioning-devel qt6-tools-devel qt6-wayland-devel rpm-build tar unzip \
+            which xcb-util-wm-devel xz zip \
+            Mesa-libEGL-devel Mesa-libGL-devel libX11-devel libxcb-devel libxkbcommon-devel \
+            libxkbcommon-x11-devel vulkan-devel wayland-devel zlib-devel
+
+      # upstream ci pins llvm 22; tumbleweed ships it as clang22/lld22
+      # link the unversioned names the build action and linker look for
+      - name: Use Clang 22
+        run: |
+          set -euo pipefail
+          for tool in clang clang++ ld.lld; do
+            ln --symbolic --force "/usr/bin/${tool}-22" "/usr/bin/${tool}"
+          done
+          clang --version
+          clang++ --version
+          ld.lld --version
+
+      - name: Download the source
+        uses: actions/download-artifact@v8
+        with:
+          artifact-ids: ${{ needs.Source.outputs.artifact-id }}
+
+      - name: Unpack the source
+        run: |
+          tar -xf ./*-source.tar.xz --strip-components=1
+          rm ./*-source.tar.xz
+
+      # rustup pin from upstream's dependency script
+      - name: Install Rust
+        run: |
+          set -euo pipefail
+          dockerfile=Meta/Docker/ci/Dockerfile
+          rustup_version="$(sed -n 's/^ARG RUSTUP_VERSION=//p' "$dockerfile")"
+          rustup_sha256="$(sed -n 's/^ARG RUSTUP_INIT_SHA256_X86_64=//p' "$dockerfile")"
+          curl --fail --silent --show-error --location --retry 5 --retry-all-errors \
+            --output /tmp/rustup-init \
+            "https://static.rust-lang.org/rustup/archive/${rustup_version}/x86_64-unknown-linux-gnu/rustup-init"
+          echo "${rustup_sha256}  /tmp/rustup-init" | sha256sum --check --quiet
+          chmod +x /tmp/rustup-init
+
+          export RUSTUP_HOME=/opt/rustup
+          export CARGO_HOME=/opt/cargo
+          channel="$(sed -n 's/^channel = "\(.*\)"/\1/p' rust-toolchain.toml)"
+          components="$(sed -n 's/^components = \[\(.*\)\]/\1/p' rust-toolchain.toml | tr -d '" ')"
+          /tmp/rustup-init -y --no-modify-path --profile minimal --default-toolchain "$channel" \
+            --component "$components"
+          echo "RUSTUP_HOME=${RUSTUP_HOME}" >> "$GITHUB_ENV"
+          echo "CARGO_HOME=${CARGO_HOME}" >> "$GITHUB_ENV"
+          echo "${CARGO_HOME}/bin" >> "$GITHUB_PATH"
+
+      # wasm-tools is needed to generate the wasm spec tests
+      - name: Install wasm-tools
+        run: |
+          set -euo pipefail
+          dockerfile=Meta/Docker/ci/Dockerfile
+          version="$(sed -n 's/^ARG WASM_TOOLS_VERSION=//p' "$dockerfile")"
+          sha256="$(sed -n 's/^ARG WASM_TOOLS_SHA256_X86_64=//p' "$dockerfile")"
+          name="wasm-tools-${version}-x86_64-linux"
+          curl --fail --silent --show-error --location --retry 5 --retry-all-errors \
+            --output /tmp/wasm-tools.tar.gz \
+            "https://github.com/bytecodealliance/wasm-tools/releases/download/v${version}/${name}.tar.gz"
+          echo "${sha256}  /tmp/wasm-tools.tar.gz" | sha256sum --check --quiet
+          tar -xzf /tmp/wasm-tools.tar.gz -C /usr/local/bin --strip-components=1 "${name}/wasm-tools"
+          wasm-tools --version
+
+      - name: Build
+        uses: ./.github/actions/build
+        with:
+          os: 'Linux'
+          arch: 'x86_64'
+          toolchain: 'Clang'
+          build_preset: 'Distribution'
+          use_caches: false
+
+      # the rpm's symlink and exec lines bypass /usr/bin/ladybird
+      # swap them for a launcher that passes the opensuse ca bundle
+      - name: Add the openSUSE launcher wrapper
+        run: |
+          set -euo pipefail
+          cat > Meta/CMake/opensuse_launcher.cmake <<'EOF'
+          set(browser_root "${CPACK_TEMPORARY_DIRECTORY}/Browser")
+          set(launcher "${browser_root}/usr/bin/ladybird")
+
+          if (NOT EXISTS "${launcher}")
+            return()
+          endif()
+
+          file(REMOVE "${launcher}")
+          file(WRITE "${launcher}" [=[#!/bin/sh
+          bundle=""
+          for candidate in /var/lib/ca-certificates/ca-bundle.pem /etc/ssl/ca-bundle.pem; do
+              if [ -r "$candidate" ]; then
+                  bundle="$candidate"
+                  break
+              fi
+          done
+
+          if [ -n "$bundle" ]; then
+              exec /opt/ladybird/bin/Ladybird --certificate "$bundle" "$@"
+          fi
+          exec /opt/ladybird/bin/Ladybird "$@"
+          ]=])
+          file(CHMOD "${launcher}" PERMISSIONS
+              OWNER_READ OWNER_WRITE OWNER_EXECUTE
+              GROUP_READ GROUP_EXECUTE
+              WORLD_READ WORLD_EXECUTE)
+
+          foreach(relative IN ITEMS
+              "usr/share/applications/org.ladybird.Ladybird.desktop"
+              "usr/share/dbus-1/services/org.ladybird.Ladybird.service")
+            set(path "${browser_root}/${relative}")
+            if (EXISTS "${path}")
+              file(READ "${path}" contents)
+              string(REPLACE "/opt/ladybird/bin/Ladybird" "/usr/bin/ladybird" contents "${contents}")
+              file(WRITE "${path}" "${contents}")
+            endif()
+          endforeach()
+          EOF
+
+          cat >> Meta/CMake/cpack_project_config.cmake <<'EOF'
+          if (CPACK_GENERATOR STREQUAL "RPM")
+            list(APPEND CPACK_PRE_BUILD_SCRIPTS "${CMAKE_CURRENT_LIST_DIR}/opensuse_launcher.cmake")
+          endif()
+          EOF
+
+      - name: Package for openSUSE
+        working-directory: ${{ github.workspace }}/Build
+        run: |
+          set -euo pipefail
+          # override upstream's fedora-only font and codec requirements
+          # dated version so zypper treats each nightly as an upgrade
+          cpack -G RPM -B packages \
+            -D CPACK_COMPONENTS_ALL="ladybird_Runtime;ladybird_SystemIntegration;ladybird_SystemSymbols" \
+            -D CPACK_PACKAGE_VERSION="${DATE}.${SHORT_SHA}" \
+            -D CPACK_RPM_BROWSER_PACKAGE_REQUIRES="liberation-fonts, ca-certificates" \
+            -D CPACK_RPM_BROWSER_PACKAGE_RECOMMENDS="libavcodec"
+
+      - name: Collect the runtime package
+        working-directory: ${{ github.workspace }}/Build/packages
+        shell: bash
+        env:
+          DATE: ${{ needs.Source.outputs.date }}
+          SHORT_SHA: ${{ needs.Source.outputs.short_sha }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+
+          echo "Packages produced:"
+          ls -lh
+
+          files=()
+          for f in ladybird-*.rpm; do
+            if [[ "$f" != ladybird-debuginfo-* ]]; then
+              files+=("$f")
+            fi
+          done
+
+          if [[ ${#files[@]} -ne 1 ]]; then
+            echo "error: expected exactly one runtime package, found ${#files[@]}" >&2
+            exit 1
+          fi
+
+          mkdir -p "${GITHUB_WORKSPACE}/out"
+          cp "${files[0]}" "${GITHUB_WORKSPACE}/out/ladybird-nightly-opensuse-tumbleweed-x86_64-${DATE}-${SHORT_SHA}.rpm"
+
+      - name: Upload
+        uses: actions/upload-artifact@v7
+        with:
+          name: pkg-opensuse
+          path: out/*
+          if-no-files-found: error
+
   Release:
     name: Publish to GitHub Release
-    needs: [Source, Build, BuildArch]
+    needs: [Source, Build, BuildArch, BuildOpenSUSE]
     if: ${{ !cancelled() && needs.Source.result == 'success' }}
     runs-on: ubuntu-latest
 
@@ -360,6 +554,7 @@ jobs:
 
           cp out/ladybird-nightly-ubuntu-26.04-x86_64-*.deb out/ladybird-nightly-ubuntu-26.04-x86_64.deb
           cp out/ladybird-nightly-fedora-44-x86_64-*.rpm out/ladybird-nightly-fedora-44-x86_64.rpm
+          cp out/ladybird-nightly-opensuse-tumbleweed-x86_64-*.rpm out/ladybird-nightly-opensuse-tumbleweed-x86_64.rpm
           cp out/ladybird-nightly-arch-x86_64-*.pkg.tar.zst out/ladybird-nightly-arch-x86_64.pkg.tar.zst
 
           files=(out/*)
@@ -388,6 +583,11 @@ jobs:
             echo "**Fedora:**" >> /tmp/release-notes.md
             echo '```bash' >> /tmp/release-notes.md
             echo "sudo dnf install ./ladybird-nightly-fedora-44-x86_64-*.rpm" >> /tmp/release-notes.md
+            echo '```' >> /tmp/release-notes.md
+            echo "" >> /tmp/release-notes.md
+            echo "**openSUSE Tumbleweed:**" >> /tmp/release-notes.md
+            echo '```bash' >> /tmp/release-notes.md
+            echo "sudo zypper install --allow-unsigned-rpm ./ladybird-nightly-opensuse-tumbleweed-x86_64-*.rpm" >> /tmp/release-notes.md
             echo '```' >> /tmp/release-notes.md
             echo "" >> /tmp/release-notes.md
             echo "**Arch Linux (update your system first with pacman -Syu):**" >> /tmp/release-notes.md
