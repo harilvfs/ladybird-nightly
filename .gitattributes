@@ -1,3 +1,3 @@
 site/*.html linguist-documentation=false
-site/*.css linguist-documentation=false
+site/*.css linguist-documentation=true
 site/*.js linguist-documentation=false

@@ -358,6 +358,10 @@ jobs:
           set -euo pipefail
           shopt -s nullglob
 
+          cp out/ladybird-nightly-ubuntu-26.04-x86_64-*.deb out/ladybird-nightly-ubuntu-26.04-x86_64.deb
+          cp out/ladybird-nightly-fedora-44-x86_64-*.rpm out/ladybird-nightly-fedora-44-x86_64.rpm
+          cp out/ladybird-nightly-arch-x86_64-*.pkg.tar.zst out/ladybird-nightly-arch-x86_64.pkg.tar.zst
+
           files=(out/*)
           if [[ ${#files[@]} -eq 0 ]]; then
             echo "error: no packages were built, nothing to publish" >&2

@@ -85,7 +85,6 @@ a { color: inherit; }
 .download-link span { color: #d5c6ff; }
 .asset-state { position: absolute; right: 20px; bottom: 18px; color: var(--muted); font: 9px var(--sans); }
 .error-state { color: var(--error); }
-.download-link[aria-disabled="true"] { opacity: .55; pointer-events: none; }
 .support-note { display: flex; gap: 12px; align-items: flex-start; margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--line); }
 .note-icon { flex: none; color: var(--blue-deep); font: 600 13px var(--sans); }
 .support-note p { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.65; }
