@@ -35,9 +35,29 @@ window.addEventListener("resize", () => moveThemeThumb(document.documentElement.
 window.addEventListener("load", () => moveThemeThumb(document.documentElement.dataset.theme));
 
 const toTop = document.querySelector("#to-top");
+const topbar = document.querySelector(".topbar");
+const nativeScrollProgress = window.CSS?.supports?.("animation-timeline: scroll(root block)") ?? false;
+let scrollProgressPending = false;
+
+function updateScrollProgress() {
+  const doc = document.documentElement;
+  const maxScroll = doc.scrollHeight - window.innerHeight;
+  const progress = maxScroll > 0 ? Math.min(1, window.scrollY / maxScroll) : 0;
+  topbar.style.setProperty("--scroll-progress", progress.toFixed(4));
+  scrollProgressPending = false;
+}
+
 window.addEventListener("scroll", () => {
   toTop.classList.toggle("is-visible", window.scrollY > 300);
+  if (!nativeScrollProgress && !scrollProgressPending) {
+    scrollProgressPending = true;
+    requestAnimationFrame(updateScrollProgress);
+  }
 }, { passive: true });
+if (!nativeScrollProgress) {
+  updateScrollProgress();
+  window.addEventListener("resize", updateScrollProgress, { passive: true });
+}
 toTop.addEventListener("click", () => {
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
