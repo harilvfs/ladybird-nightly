@@ -205,7 +205,7 @@ jobs:
           echo "RUSTUP_HOME=${RUSTUP_HOME}" >> "$GITHUB_ENV"
           echo "CARGO_HOME=${CARGO_HOME}" >> "$GITHUB_ENV"
 
-      # the build generates the WebAssembly spec tests, which needs wasm-tools;
+      # the build generates the WebAssembly spec tests, which needs wasm-tools
       - name: Install wasm-tools
         run: |
           set -euo pipefail
@@ -271,9 +271,16 @@ jobs:
             fi
           done < <(find "$STAGE/opt/ladybird/bin" "$STAGE/opt/ladybird/libexec" "$PRIVATE_LIB" -type f -print0)
 
-          # add a terminal command symlink
+          # the system integration component may already install a ladybird command; point it at /opt
+          if [[ -e "$STAGE/usr/bin/ladybird" || -L "$STAGE/usr/bin/ladybird" ]]; then
+            echo "Existing usr/bin/ladybird:"
+            ls -l "$STAGE/usr/bin/ladybird"
+          fi
           mkdir -p "$STAGE/usr/bin"
-          ln -s /opt/ladybird/bin/Ladybird "$STAGE/usr/bin/ladybird"
+          ln -sfn /opt/ladybird/bin/Ladybird "$STAGE/usr/bin/ladybird"
+
+          # show how the desktop entry launches the browser, to check it still resolves
+          grep -rh '^Exec=' "$STAGE/usr/share/applications" 2>/dev/null || true
 
           # runtime dependencies: the system libraries the installed binaries link against,
           # mapped to the pacman packages that own them
