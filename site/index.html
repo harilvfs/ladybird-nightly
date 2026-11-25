@@ -14,9 +14,6 @@
       }
     </script>
     <link rel="icon" href="ladybird.png" type="image/png" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="styles.css" />
     <script src="app.js" defer></script>
   </head>
@@ -35,7 +32,11 @@
         <a class="nav-github" href="https://github.com/harilvfs/ladybird-nightly" target="_blank" rel="noreferrer" aria-label="Ladybird Nightly on GitHub">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.89 1.53 2.34 1.09 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.56-1.11-4.56-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02a9.6 9.6 0 0 1 5 0c1.91-1.29 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.75c0 .27.18.58.69.48A10 10 0 0 0 12 2Z"/></svg>
         </a>
-        <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch to light theme">Light mode</button>
+        <div class="theme-switch" id="theme-switch" role="group" aria-label="Color theme">
+          <span class="theme-thumb" aria-hidden="true"></span>
+          <button type="button" data-theme-choice="dark" aria-label="Dark theme" title="Dark theme" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 15.4A8.5 8.5 0 0 1 8.6 3.8 8.6 8.6 0 1 0 20.2 15.4Z"/></svg></button>
+          <button type="button" data-theme-choice="light" aria-label="Light theme" title="Light theme" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg></button>
+        </div>
       </div>
     </header>
 
@@ -47,7 +48,7 @@
           <p class="hero-lede">Try the latest Ladybird changes on Linux. Unofficial nightly packages, built from upstream and ready to install.</p>
           <div class="hero-actions">
             <a class="button button-primary" href="#downloads">Get the nightly <span aria-hidden="true">↓</span></a>
-            <a class="text-link" href="https://ladybird.org/" target="_blank" rel="noreferrer">Visit Ladybird.org <span aria-hidden="true">↗</span></a>
+            <a class="text-link" href="https://ladybird.org/" target="_blank" rel="noreferrer">Visit Ladybird.org <svg class="external-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-8.5 8.5"/><path d="M18 14v4.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10"/></svg></a>
           </div>
           <div class="hero-meta">Package links follow the latest nightly release.</div>
         </div>
@@ -55,7 +56,6 @@
           <div class="browser-preview">
             <div class="preview-bar"><img src="ladybird.png" alt="" /><span>Ladybird Nightly</span><span class="preview-version">LINUX BUILD</span></div>
             <div class="preview-content"><span class="preview-kicker">A NEW WAY TO BROWSE</span><strong>Built for<br />the open web.</strong><span class="preview-rule"></span><span class="preview-caption">Independent browser. Community nightly.</span></div>
-            <div class="preview-footer"><span>UPSTREAM BUILD</span><span>LATEST RELEASE</span></div>
           </div>
         </div>
       </section>
@@ -67,25 +67,22 @@
         </div>
         <div class="download-grid">
           <article class="download-card" data-distro="ubuntu">
-            <div class="card-top"><span class="card-kicker">01 / DEB PACKAGE</span><span class="card-tag">SUPPORTED</span></div>
+            <div class="card-top"><img class="distro-icon" src="assets/distro-icons/ubuntu.png" alt="" /></div>
             <h3>Ubuntu <span>26.04</span></h3>
             <p>Native <code>.deb</code> package for Ubuntu 26.04.</p>
-            <a class="button download-link" href="https://github.com/harilvfs/ladybird-nightly/releases/latest/download/ladybird-nightly-ubuntu-26.04-x86_64.deb">Download .deb <span aria-hidden="true">↓</span></a>
-            <div class="asset-state">Latest Ubuntu package</div>
+            <a class="button button-primary" href="https://github.com/harilvfs/ladybird-nightly/releases/latest/download/ladybird-nightly-ubuntu-26.04-x86_64.deb">Download .deb <span aria-hidden="true">↓</span></a>
           </article>
           <article class="download-card" data-distro="fedora">
-            <div class="card-top"><span class="card-kicker">02 / RPM PACKAGE</span><span class="card-tag">SUPPORTED</span></div>
+            <div class="card-top"><img class="distro-icon" src="assets/distro-icons/fedora.png" alt="" /></div>
             <h3>Fedora <span>44</span></h3>
             <p>Native <code>.rpm</code> package for Fedora 44.</p>
-            <a class="button download-link" href="https://github.com/harilvfs/ladybird-nightly/releases/latest/download/ladybird-nightly-fedora-44-x86_64.rpm">Download .rpm <span aria-hidden="true">↓</span></a>
-            <div class="asset-state">Latest Fedora package</div>
+            <a class="button button-primary" href="https://github.com/harilvfs/ladybird-nightly/releases/latest/download/ladybird-nightly-fedora-44-x86_64.rpm">Download .rpm <span aria-hidden="true">↓</span></a>
           </article>
           <article class="download-card" data-distro="arch">
-            <div class="card-top"><span class="card-kicker">03 / PACMAN PACKAGE</span><span class="card-tag">SUPPORTED</span></div>
+            <div class="card-top"><img class="distro-icon" src="assets/distro-icons/arch.png" alt="" /></div>
             <h3>Arch Linux <span>and derivatives</span></h3>
             <p>Pacman package for Arch Linux and Arch-based systems.</p>
-            <a class="button download-link" href="https://github.com/harilvfs/ladybird-nightly/releases/latest/download/ladybird-nightly-arch-x86_64.pkg.tar.zst">Download package <span aria-hidden="true">↓</span></a>
-            <div class="asset-state">Latest Arch package</div>
+            <a class="button button-primary" href="https://github.com/harilvfs/ladybird-nightly/releases/latest/download/ladybird-nightly-arch-x86_64.pkg.tar.zst">Download package <span aria-hidden="true">↓</span></a>
           </article>
         </div>
         <div class="support-note"><span class="note-icon">i</span><p>Only the listed distributions are tested. Support for derivative distributions is not guaranteed. <a href="https://github.com/harilvfs/ladybird-nightly/issues">Report a problem</a> with your distro, version, and error.</p></div>
@@ -100,15 +97,35 @@
 
       <section class="about-section wrap" id="about">
         <div class="about-title"><div class="eyebrow">A NOTE BEFORE YOU BROWSE</div><h2>Early software.<br /><em>Real rough edges.</em></h2></div>
-        <div class="about-copy"><p>Ladybird is an independent browser project, and these community builds track upstream development. Expect bugs, crashes, and websites that may not work as expected.</p><p>This project is not affiliated with or endorsed by Ladybird. The Ubuntu and Fedora packages follow upstream build dependencies. Arch packaging is maintained here and may need changes as upstream evolves. Compatibility with derivative distributions is not guaranteed.</p><a class="text-link" href="https://github.com/LadybirdBrowser/ladybird" target="_blank" rel="noreferrer">Explore the upstream project <span aria-hidden="true">↗</span></a></div>
+        <div class="about-copy"><p>Ladybird is an independent browser project, and these community builds track upstream development. Expect bugs, crashes, and websites that may not work as expected.</p><p>This project is not affiliated with or endorsed by Ladybird. The Ubuntu and Fedora packages follow upstream build dependencies. Arch packaging is maintained here and may need changes as upstream evolves. Compatibility with derivative distributions is not guaranteed.</p><a class="text-link" href="https://github.com/LadybirdBrowser/ladybird" target="_blank" rel="noreferrer">Explore the upstream project <svg class="external-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-8.5 8.5"/><path d="M18 14v4.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10"/></svg></a></div>
       </section>
 
-      <section class="bottom-cta wrap">
-        <div><div class="eyebrow">FOLLOW THE BUILD</div><h2>Fresh from upstream.</h2></div><a class="button button-outline" href="https://github.com/harilvfs/ladybird-nightly/releases" target="_blank" rel="noreferrer">Browse all releases <span>↗</span></a>
-      </section>
     </main>
 
-    <footer class="footer wrap"><a class="brand" href="#top"><img src="ladybird.png" alt="" /><span>ladybird<span class="brand-light">nightly</span></span></a><span>Unofficial community builds · Not affiliated with Ladybird</span><a href="https://github.com/harilvfs/ladybird-nightly/issues">Issues ↗</a></footer>
+    <footer class="site-footer">
+      <div class="wrap">
+        <div class="footer-grid">
+          <div class="footer-brand">
+            <a class="brand" href="#top"><img src="ladybird.png" alt="" /><span>ladybird<span class="brand-light">nightly</span></span></a>
+            <p>Unofficial nightly packages.</p>
+          </div>
+          <div class="footer-column">
+            <h2>Downloads</h2>
+            <a href="https://github.com/harilvfs/ladybird-nightly/releases/latest/download/ladybird-nightly-ubuntu-26.04-x86_64.deb">Ubuntu 26.04 <svg class="external-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-8.5 8.5"/><path d="M18 14v4.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10"/></svg></a>
+            <a href="https://github.com/harilvfs/ladybird-nightly/releases/latest/download/ladybird-nightly-fedora-44-x86_64.rpm">Fedora 44 <svg class="external-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-8.5 8.5"/><path d="M18 14v4.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10"/></svg></a>
+            <a href="https://github.com/harilvfs/ladybird-nightly/releases/latest/download/ladybird-nightly-arch-x86_64.pkg.tar.zst">Arch Linux <svg class="external-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-8.5 8.5"/><path d="M18 14v4.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10"/></svg></a>
+          </div>
+          <div class="footer-column">
+            <h2>Project</h2>
+            <a href="https://github.com/harilvfs/ladybird-nightly" target="_blank" rel="noreferrer">Source code <svg class="external-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-8.5 8.5"/><path d="M18 14v4.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10"/></svg></a>
+            <a href="https://github.com/harilvfs/ladybird-nightly/releases" target="_blank" rel="noreferrer">Browse all releases <svg class="external-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-8.5 8.5"/><path d="M18 14v4.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10"/></svg></a>
+            <a href="https://github.com/harilvfs/ladybird-nightly/issues" target="_blank" rel="noreferrer">Report an issue <svg class="external-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-8.5 8.5"/><path d="M18 14v4.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10"/></svg></a>
+            <a href="https://ladybird.org/" target="_blank" rel="noreferrer">Ladybird.org <svg class="external-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-8.5 8.5"/><path d="M18 14v4.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10"/></svg></a>
+          </div>
+        </div>
+        <div class="footer-bottom"><span>© 2026 Hari Chalise. MIT License.</span><span>Unofficial community builds. Not affiliated with Ladybird.</span></div>
+      </div>
+    </footer>
     <button class="to-top" id="to-top" type="button" aria-label="Back to top" title="Back to top"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V6m0 0-6 6m6-6 6 6"/></svg></button>
   </body>
 </html>
