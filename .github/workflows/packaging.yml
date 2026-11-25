@@ -344,7 +344,7 @@ jobs:
         shell: bash
 
     container:
-      image: registry.opensuse.org/opensuse/tumbleweed:latest
+      image: registry.opensuse.org/opensuse/toolbox:latest
       options: --ulimit core=1
 
     steps:
