@@ -339,6 +339,10 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 360
 
+    defaults:
+      run:
+        shell: bash
+
     container:
       image: registry.opensuse.org/opensuse/tumbleweed:latest
       options: --ulimit core=1
