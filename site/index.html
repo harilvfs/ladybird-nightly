@@ -80,6 +80,12 @@
             <p>Native <code>.rpm</code> package for Fedora 44.</p>
             <a class="button button-primary" href="https://github.com/harilvfs/ladybird-nightly/releases/latest/download/ladybird-nightly-fedora-44-x86_64.rpm">Download .rpm <span aria-hidden="true">↓</span></a>
           </article>
+          <article class="download-card" data-distro="opensuse">
+            <div class="card-top"><img class="distro-icon" src="assets/distro-icons/opensuse.png" alt="" /></div>
+            <h3>openSUSE <span>Tumbleweed</span></h3>
+            <p>Native <code>.rpm</code> package for openSUSE Tumbleweed.</p>
+            <a class="button button-primary" href="https://github.com/harilvfs/ladybird-nightly/releases/latest/download/ladybird-nightly-opensuse-tumbleweed-x86_64.rpm">Download .rpm <span aria-hidden="true">↓</span></a>
+          </article>
           <article class="download-card" data-distro="arch">
             <div class="card-top"><img class="distro-icon" src="assets/distro-icons/arch.png" alt="" /></div>
             <h3>Arch Linux <span>and derivatives</span></h3>
@@ -92,7 +98,7 @@
 
       <section class="install-section" id="install">
         <div class="wrap install-layout">
-          <div><div class="eyebrow">QUICK START</div><h2>One command.<br /><em>Latest nightly.</em></h2><p>The installer supports Ubuntu 26.04, Fedora 44, Arch Linux, and Arch-based distributions. On other distributions it stops because no package is available.</p><p>After installation, run <code>ladybird</code> or <code>lb</code>. The <code>lb</code> command is quiet and works well from app launchers.</p></div>
+          <div><div class="eyebrow">QUICK START</div><h2>One command.<br /><em>Latest nightly.</em></h2><p>The installer supports Ubuntu 26.04, Fedora 44, openSUSE Tumbleweed, Arch Linux, and Arch-based distributions. On other distributions it stops because no package is available.</p><p>After installation, run <code>ladybird</code> or <code>lb</code>. The <code>lb</code> command is quiet and works well from app launchers.</p></div>
           <div class="terminal"><div class="terminal-head"><span>TERMINAL</span></div><div class="terminal-command"><pre><code id="install-command">curl -fsSL https://raw.githubusercontent.com/harilvfs/ladybird-nightly/main/install.sh | bash</code></pre><button data-copy-target="install-command" type="button" aria-label="Copy install command">COPY</button></div><div class="terminal-foot">Then launch <code>ladybird</code> from your app launcher or terminal.</div></div>
         </div>
         <details class="uninstall-box wrap">
@@ -107,16 +113,16 @@
           <p>Packages are tested on the mainline distributions listed above. Compatibility with their derivatives is not guaranteed.</p>
         </div>
         <div class="support-grid">
-          <article class="support-card"><div class="support-card-heading"><div class="support-icons"><img src="assets/distro-icons/ubuntu.png" alt="" /><img src="assets/distro-icons/fedora.png" alt="" /></div><h3>Ubuntu and Fedora</h3></div><p>These packages follow Ladybird upstream's build dependencies. The Ubuntu package may not work on Debian, which can ship older Qt and glibc versions.</p></article>
+          <article class="support-card"><div class="support-card-heading"><div class="support-icons"><img src="assets/distro-icons/ubuntu.png" alt="" /><img src="assets/distro-icons/fedora.png" alt="" /><img src="assets/distro-icons/opensuse.png" alt="" /></div><h3>Ubuntu, Fedora and openSUSE</h3></div><p>These packages follow Ladybird upstream's build dependencies. The Ubuntu package may not work on Debian, which can ship older Qt and glibc versions.</p></article>
           <article class="support-card"><div class="support-card-heading"><div class="support-icons"><img src="assets/distro-icons/arch.png" alt="" /></div><h3>Arch Linux</h3></div><p>Upstream does not directly support Arch Linux. I maintain the Arch dependency mapping and packaging. Upstream changes may require updates, so compatibility can change.</p></article>
         </div>
-        <aside class="compat-warning" aria-label="Important"><span class="note-icon" aria-hidden="true">i</span><div><strong>Important</strong><p><b>Derivative distributions:</b> Ubuntu-based, Fedora-based, and Arch-based distributions are not guaranteed to work. If you run into a problem, <a href="https://github.com/harilvfs/ladybird-nightly/issues">open an issue</a> with your distro, version, and error.</p></div></aside>
+        <aside class="compat-warning" aria-label="Important"><div class="compat-warning-heading"><span class="note-icon" aria-hidden="true">i</span><strong>Important</strong></div><p><b>Derivative distributions:</b> Ubuntu-based, Fedora-based, openSUSE-based, and Arch-based distributions are not guaranteed to work. If you run into a problem, <a href="https://github.com/harilvfs/ladybird-nightly/issues">open an issue</a> with your distro, version, and error.</p></aside>
         <div class="known-issues">
           <div class="eyebrow">KNOWN UPSTREAM ISSUES</div>
-          <article><h3>HTTPS certificate error 77</h3><p>On some distributions, including Arch, openSUSE, and NixOS, certificate symlinks can point outside paths available to Ladybird's sandbox. HTTPS requests may fail with a CA certificate error. See <a href="https://github.com/LadybirdBrowser/ladybird/issues/10241" target="_blank" rel="noreferrer">upstream issue 10241</a>.</p></article>
+          <article><h3>HTTPS certificate error 77</h3><p>On some distributions, including Arch and NixOS, certificate symlinks can point outside paths available to Ladybird's sandbox. HTTPS requests may fail with a CA certificate error. The openSUSE package avoids this by passing openSUSE's CA bundle with <code>--certificate</code>. See <a href="https://github.com/LadybirdBrowser/ladybird/issues/10241" target="_blank" rel="noreferrer">upstream issue 10241</a>.</p></article>
           <article><h3>Crashes on older CPUs</h3><p>Some older CPUs, including Intel Haswell and earlier, may hit an illegal instruction crash in WebContent. Related upstream reports: <a href="https://github.com/LadybirdBrowser/ladybird/issues/8989" target="_blank" rel="noreferrer">8989</a>, <a href="https://github.com/LadybirdBrowser/ladybird/issues/3836" target="_blank" rel="noreferrer">3836</a>, and <a href="https://github.com/LadybirdBrowser/ladybird/issues/10298" target="_blank" rel="noreferrer">10298</a>.</p></article>
         </div>
-        <aside class="build-note" aria-label="Note"><span class="note-icon" aria-hidden="true">i</span><p><strong>Note</strong> Standalone tarballs are paused because they have had issues across Linux distributions, and maintaining separate fixes without upstream support for each distribution is not practical. Distro packages are built from upstream master daily at 02:00 UTC. Builds can fail when upstream code or dependencies change. If the latest release is several days old, the package build may be failing.</p></aside>
+        <aside class="build-note" aria-label="Note"><div class="build-note-heading"><span class="note-icon" aria-hidden="true">i</span><strong>Note</strong></div><p>Standalone tarballs are paused because they have had issues across Linux distributions, and maintaining separate fixes without upstream support for each distribution is not practical. Distro packages are built from upstream master daily at 02:00 UTC. Builds can fail when upstream code or dependencies change. If the latest release is several days old, the package build may be failing.</p></aside>
       </section>
 
       <section class="about-section wrap" id="about">
@@ -137,6 +143,7 @@
             <h2>Downloads</h2>
             <a href="https://github.com/harilvfs/ladybird-nightly/releases/latest/download/ladybird-nightly-ubuntu-26.04-x86_64.deb"><img class="footer-distro-icon" src="assets/distro-icons/ubuntu.png" alt="" />Ubuntu 26.04 <svg class="external-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-8.5 8.5"/><path d="M18 14v4.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10"/></svg></a>
             <a href="https://github.com/harilvfs/ladybird-nightly/releases/latest/download/ladybird-nightly-fedora-44-x86_64.rpm"><img class="footer-distro-icon" src="assets/distro-icons/fedora.png" alt="" />Fedora 44 <svg class="external-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-8.5 8.5"/><path d="M18 14v4.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10"/></svg></a>
+            <a href="https://github.com/harilvfs/ladybird-nightly/releases/latest/download/ladybird-nightly-opensuse-tumbleweed-x86_64.rpm"><img class="footer-distro-icon" src="assets/distro-icons/opensuse.png" alt="" />openSUSE Tumbleweed <svg class="external-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-8.5 8.5"/><path d="M18 14v4.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10"/></svg></a>
             <a href="https://github.com/harilvfs/ladybird-nightly/releases/latest/download/ladybird-nightly-arch-x86_64.pkg.tar.zst"><img class="footer-distro-icon" src="assets/distro-icons/arch.png" alt="" />Arch Linux <svg class="external-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-8.5 8.5"/><path d="M18 14v4.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10"/></svg></a>
           </div>
           <div class="footer-column">

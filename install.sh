@@ -65,6 +65,13 @@ if [[ "$UNINSTALL" -eq 1 ]]; then
           break
         fi
       done
+    elif [[ "$DISTRO_ID" == "opensuse-tumbleweed" ]] && command -v rpm &>/dev/null && command -v zypper &>/dev/null; then
+      for package in ladybird-nightly ladybird; do
+        if rpm -q --quiet "$package"; then
+          remove_package zypper --non-interactive remove "$package"
+          break
+        fi
+      done
     fi
   fi
 
@@ -114,13 +121,17 @@ elif [[ "$DISTRO_ID" == "fedora" && "$DISTRO_VERSION" == "44" ]]; then
   ASSET_PREFIX="ladybird-nightly-fedora-44-x86_64"
   PACKAGE_EXT="rpm"
   PACKAGE_TYPE="rpm"
+elif [[ "$DISTRO_ID" == "opensuse-tumbleweed" ]]; then
+  ASSET_PREFIX="ladybird-nightly-opensuse-tumbleweed-x86_64"
+  PACKAGE_EXT="rpm"
+  PACKAGE_TYPE="zypper"
 elif [[ " $DISTRO_ID $DISTRO_ID_LIKE " == *" arch "* ]]; then
   ASSET_PREFIX="ladybird-nightly-arch-x86_64"
   PACKAGE_EXT="pkg.tar.zst"
   PACKAGE_TYPE="pacman"
 else
   echo "error: no Ladybird nightly package is available for $DISTRO_ID ${DISTRO_VERSION}." >&2
-  echo "supported: Ubuntu 26.04, Fedora 44, Arch Linux, and Arch-based distributions." >&2
+  echo "supported: Ubuntu 26.04, Fedora 44, openSUSE Tumbleweed, Arch Linux, and Arch-based distributions." >&2
   exit 1
 fi
 
@@ -177,6 +188,7 @@ fi
 case "$PACKAGE_TYPE" in
   deb) "${SUDO[@]}" apt-get install -y "$PACKAGE_FILE" ;;
   rpm) "${SUDO[@]}" dnf install -y "$PACKAGE_FILE" ;;
+  zypper) "${SUDO[@]}" zypper --non-interactive install --allow-unsigned-rpm "$PACKAGE_FILE" ;;
   pacman) "${SUDO[@]}" pacman -U --noconfirm "$PACKAGE_FILE" ;;
 esac
 
