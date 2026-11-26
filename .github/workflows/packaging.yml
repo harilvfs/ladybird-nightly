@@ -349,6 +349,9 @@ jobs:
     container:
       image: registry.opensuse.org/opensuse/toolbox:latest
       options: --ulimit core=1
+      # the toolbox image has no PATH, so GITHUB_PATH would replace it with just the new dirs
+      env:
+        PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
     steps:
       # opensuse deps; upstream's script only handles ubuntu and fedora
