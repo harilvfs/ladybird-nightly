@@ -79,7 +79,7 @@ a { color: inherit; }
 .theme-switch button { position: relative; z-index: 1; display: grid; place-items: center; width: 31px; height: 27px; padding: 4px; border: 0; border-radius: 999px; background: transparent; color: var(--muted); cursor: pointer; }
 .theme-switch button svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 .theme-switch button[aria-pressed="true"] { color: var(--ink); }
-.nav-toggle { display: none; place-items: center; width: 42px; height: 42px; padding: 0; border: 1px solid var(--line); border-radius: 12px; background: transparent; color: var(--ink); cursor: pointer; }
+.nav-toggle { display: none; place-items: center; width: 42px; height: 42px; padding: 0; border: 1px solid var(--line); border-radius: 12px; background: transparent; color: var(--ink); cursor: pointer; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
 .nav-toggle svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .nav-toggle .icon-close { display: none; }
 .nav-toggle[aria-expanded="true"] .icon-menu { display: none; }
