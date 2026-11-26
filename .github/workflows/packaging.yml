@@ -407,7 +407,7 @@ jobs:
             --component "$components"
           echo "RUSTUP_HOME=${RUSTUP_HOME}" >> "$GITHUB_ENV"
           echo "CARGO_HOME=${CARGO_HOME}" >> "$GITHUB_ENV"
-          echo "PATH=${CARGO_HOME}/bin:${PATH}" >> "$GITHUB_ENV"
+          echo "${CARGO_HOME}/bin" >> "$GITHUB_PATH"
 
       # wasm-tools is needed to generate the wasm spec tests
       - name: Install wasm-tools
