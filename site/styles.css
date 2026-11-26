@@ -67,8 +67,8 @@ a { color: inherit; }
 .brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font-size: 16px; font-weight: 700; letter-spacing: -.045em; }
 .brand img { width: 29px; height: 29px; object-fit: contain; }
 .brand-light { margin-left: 5px; color: var(--muted); font-weight: 400; }
-.topbar nav { display: flex; gap: 34px; }
-.topbar nav a, .nav-github { color: var(--muted); text-decoration: none; font-size: 12px; }
+.desktop-nav { display: flex; gap: 34px; }
+.desktop-nav a, .nav-github { color: var(--muted); text-decoration: none; font-size: 12px; }
 .nav-github { color: var(--indigo); }
 .nav-actions { display: flex; align-items: center; gap: 16px; }
 .nav-github { display: inline-flex; align-items: center; justify-content: center; }
@@ -79,6 +79,15 @@ a { color: inherit; }
 .theme-switch button { position: relative; z-index: 1; display: grid; place-items: center; width: 31px; height: 27px; padding: 4px; border: 0; border-radius: 999px; background: transparent; color: var(--muted); cursor: pointer; }
 .theme-switch button svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 .theme-switch button[aria-pressed="true"] { color: var(--ink); }
+.nav-toggle { display: none; place-items: center; width: 42px; height: 42px; padding: 0; border: 1px solid var(--line); border-radius: 12px; background: transparent; color: var(--ink); cursor: pointer; }
+.nav-toggle svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.nav-toggle .icon-close { display: none; }
+.nav-toggle[aria-expanded="true"] .icon-menu { display: none; }
+.nav-toggle[aria-expanded="true"] .icon-close { display: block; }
+.mobile-nav { display: none; position: absolute; top: 100%; left: 0; right: 0; flex-direction: column; padding: 6px 19px 14px; border-bottom: 1px solid var(--line); background: var(--paper); box-shadow: 0 12px 24px #0003; opacity: 0; visibility: hidden; transform: translateY(-8px); transition: opacity .2s ease, transform .2s ease, visibility 0s linear .2s; }
+.mobile-nav.is-open { opacity: 1; visibility: visible; transform: translateY(0); transition: opacity .2s ease, transform .2s ease, visibility 0s; }
+.mobile-nav a { display: block; padding: 13px 2px; color: var(--muted); text-decoration: none; font-size: 14px; font-weight: 500; }
+.mobile-nav a + a { border-top: 1px solid var(--line); }
 .eyebrow { color: var(--blue-deep); font: 600 10px var(--sans); letter-spacing: .1em; }
 .hero { min-height: 590px; position: relative; display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 36px; padding-top: 38px; padding-bottom: 70px; }
 .hero-copy { position: relative; z-index: 1; }
@@ -205,10 +214,9 @@ a { color: inherit; }
 @media (max-width: 760px) {
   .wrap { width: min(100% - 38px, 560px); }
   .topbar { height: 66px; padding-inline: 19px; }
-  .topbar nav { gap: 15px; }
-  .topbar nav a { font-size: 10px; }
-  .topbar nav a[href="#install"], .topbar nav a[href="#about"] { display: none; }
-  .topbar nav { gap: 12px; }
+  .desktop-nav { display: none; }
+  .nav-toggle { display: grid; }
+  .mobile-nav { display: flex; }
   .nav-actions { gap: 9px; }
   .nav-github svg { width: 17px; height: 17px; }
   .theme-switch button { width: 29px; height: 25px; }
@@ -254,4 +262,8 @@ a { color: inherit; }
 @media (max-width: 480px) {
   .footer-grid { grid-template-columns: 1fr; gap: 25px; }
   .footer-brand { grid-column: auto; }
+}
+
+@media (max-width: 360px) {
+  .brand-light { display: none; }
 }

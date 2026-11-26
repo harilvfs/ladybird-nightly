@@ -23,7 +23,7 @@
         <img src="ladybird.png" alt="" />
         <span>ladybird<span class="brand-light">nightly</span></span>
       </a>
-      <nav aria-label="Main navigation">
+      <nav class="desktop-nav" aria-label="Main navigation">
         <a href="#downloads">Downloads</a>
         <a href="#install">Install</a>
         <a href="#support">Support</a>
@@ -38,7 +38,17 @@
           <button type="button" data-theme-choice="dark" aria-label="Dark theme" title="Dark theme" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 15.4A8.5 8.5 0 0 1 8.6 3.8 8.6 8.6 0 1 0 20.2 15.4Z"/></svg></button>
           <button type="button" data-theme-choice="light" aria-label="Light theme" title="Light theme" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg></button>
         </div>
+        <button class="nav-toggle" id="nav-toggle" type="button" aria-label="Open menu" aria-controls="mobile-nav" aria-expanded="false">
+          <svg class="icon-menu" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+          <svg class="icon-close" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5l14 14M19 5 5 19" /></svg>
+        </button>
       </div>
+      <nav class="mobile-nav" id="mobile-nav" aria-label="Mobile navigation">
+        <a href="#downloads">Downloads</a>
+        <a href="#install">Install</a>
+        <a href="#support">Support</a>
+        <a href="#about">About</a>
+      </nav>
     </header>
 
     <main id="top">
