@@ -2,7 +2,7 @@ name: Nightly Linux Packages
 
 run-name: Nightly Linux Packages from ${{ inputs.ref || 'master' }}
 
-# build ubuntu and fedora packages from upstream setup; maintain arch packaging here
+# build ubuntu and fedora packages from upstream setup; maintain arch and opensuse packaging here
 
 on:
   schedule:
@@ -102,8 +102,10 @@ jobs:
       - name: Install the build dependencies
         run: ./Meta/Docker/ci/install-build-dependencies.sh
 
+      # upstream's build action is referenced directly from the upstream repository: a local
+      # ./.github/actions path inside it is now resolved against this repository, which has no such action
       - name: Build
-        uses: ./.github/actions/build
+        uses: LadybirdBrowser/ladybird/.github/actions/build@master
         with:
           os: 'Linux'
           arch: 'x86_64'
@@ -221,7 +223,7 @@ jobs:
           wasm-tools --version
 
       - name: Build
-        uses: ./.github/actions/build
+        uses: LadybirdBrowser/ladybird/.github/actions/build@master
         with:
           os: 'Linux'
           arch: 'x86_64'
@@ -339,9 +341,10 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 360
 
+    # absolute path, so the shell is found even if a step ever changes PATH
     defaults:
       run:
-        shell: bash
+        shell: /usr/bin/bash --noprofile --norc -eo pipefail {0}
 
     container:
       image: registry.opensuse.org/opensuse/toolbox:latest
@@ -425,7 +428,7 @@ jobs:
           wasm-tools --version
 
       - name: Build
-        uses: ./.github/actions/build
+        uses: LadybirdBrowser/ladybird/.github/actions/build@master
         with:
           os: 'Linux'
           arch: 'x86_64'
@@ -486,6 +489,9 @@ jobs:
 
       - name: Package for openSUSE
         working-directory: ${{ github.workspace }}/Build
+        env:
+          DATE: ${{ needs.Source.outputs.date }}
+          SHORT_SHA: ${{ needs.Source.outputs.short_sha }}
         run: |
           set -euo pipefail
           # override upstream's fedora-only font and codec requirements
@@ -498,7 +504,6 @@ jobs:
 
       - name: Collect the runtime package
         working-directory: ${{ github.workspace }}/Build/packages
-        shell: bash
         env:
           DATE: ${{ needs.Source.outputs.date }}
           SHORT_SHA: ${{ needs.Source.outputs.short_sha }}
