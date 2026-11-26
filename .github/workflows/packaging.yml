@@ -362,7 +362,7 @@ jobs:
             curl diffutils file findutils gcc16 gcc16-c++ git glslang-devel gzip libdrm-devel \
             liberation-fonts libglvnd-devel libpulse-devel libtool lld22 make nasm \
             ncurses-devel ninja patch patchelf perl pkgconf-pkg-config python3 qt6-base-devel \
-            qt6-positioning-devel qt6-tools-devel qt6-wayland-devel rpm-build tar unzip \
+            qt6-positioning-devel qt6-tools-devel qt6-wayland-devel rpm-build sed tar unzip \
             which xcb-util-wm-devel xz zip \
             Mesa-libEGL-devel Mesa-libGL-devel libX11-devel libxcb-devel libxkbcommon-devel \
             libxkbcommon-x11-devel vulkan-devel wayland-devel zlib-devel
