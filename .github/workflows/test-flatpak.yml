@@ -102,8 +102,8 @@ jobs:
           rm -rf /var/lib/flatpak
           mv /var/lib/flatpak.rw /var/lib/flatpak
 
-      # make sure the bundle targets the baseline CPU, same manifest edit upstream uses for the version
-      - name: Set the baseline CPU target in the manifest
+      # patch the manifest: force the baseline CPU target, and create /app/bin before gn copies into it
+      - name: Patch the flatpak manifest
         run: |
           python3 - <<'SCRIPT'
           import json
@@ -111,8 +111,19 @@ jobs:
           path = "Meta/CMake/flatpak/org.ladybird.Ladybird.json"
           with open(path) as file:
               manifest = json.load(file)
+
           ladybird = next(module for module in manifest["modules"] if module["name"] == "Ladybird")
           ladybird["config-opts"].append("-DLADYBIRD_BASELINE_CPU_TARGET=ON")
+
+          # upstream's gn-whole-enchilada.sh runs `cp out/gn "$FLATPAK_DEST"/bin/` without
+          # creating the directory first, which fails with "Not a directory" when /app/bin is missing
+          gn = next((module for module in manifest["modules"] if module["name"] == "gn"), None)
+          if gn is not None:
+              commands = gn.setdefault("build-commands", [])
+              mkdir = 'mkdir -p "$FLATPAK_DEST/bin"'
+              if mkdir not in commands:
+                  commands.insert(0, mkdir)
+
           with open(path, "w") as file:
               json.dump(manifest, file, indent=4)
           SCRIPT
