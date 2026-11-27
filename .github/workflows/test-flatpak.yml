@@ -1,0 +1,210 @@
+name: Test Flatpak Build
+
+run-name: Test Flatpak Build from ${{ inputs.ref || 'master' }}
+
+# standalone flatpak build for testing; the nightly pipeline lives in packaging.yml
+# the bundle is uploaded as an artifact and published as a prerelease, so it never
+# touches the main packages-* release
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Ladybird branch, tag or full commit hash to build'
+        required: true
+        default: 'master'
+        type: string
+
+  # run automatically when this test workflow changes, so a push is enough to try it
+  push:
+    paths:
+      - '.github/workflows/test-flatpak.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: test-flatpak-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  Source:
+    name: Source
+    runs-on: ubuntu-latest
+
+    outputs:
+      artifact-id: ${{ steps.upload.outputs.artifact-id }}
+      date: ${{ steps.info.outputs.date }}
+      short_sha: ${{ steps.info.outputs.short_sha }}
+      sha: ${{ steps.info.outputs.sha }}
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          repository: LadybirdBrowser/ladybird
+          ref: ${{ inputs.ref || 'master' }}
+
+      - name: Get commit info
+        id: info
+        run: |
+          SHA=$(git rev-parse HEAD)
+          {
+            echo "sha=$SHA"
+            echo "short_sha=${SHA:0:7}"
+            echo "date=$(date -u +%Y%m%d)"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Package
+        run: |
+          name="ladybird"
+          git archive --prefix= --add-virtual-file="${name}/REVISION:$(git rev-parse HEAD)" --prefix="${name}/" \
+            --output="${name}-source.tar" HEAD
+          xz -9 -T0 "${name}-source.tar"
+
+      - name: Upload
+        id: upload
+        uses: actions/upload-artifact@v7
+        with:
+          path: '*-source.tar.xz'
+          archive: false
+          if-no-files-found: error
+
+  BuildFlatpak:
+    name: Flatpak, x86_64
+    needs: Source
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+
+    # same image and options as upstream's release workflow
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:kde-6.10
+      options: --privileged
+
+    env:
+      BUNDLE: ladybird-nightly-flatpak-x86_64-${{ needs.Source.outputs.date }}-${{ needs.Source.outputs.short_sha }}.flatpak
+
+    steps:
+      - name: Download the source
+        uses: actions/download-artifact@v8
+        with:
+          artifact-ids: ${{ needs.Source.outputs.artifact-id }}
+
+      - name: Unpack the source
+        run: |
+          tar -xf ./*-source.tar.xz --strip-components=1
+          rm ./*-source.tar.xz
+
+      # upstream's workaround: the image bakes the SDK into a read-only layer, and an SDK update from
+      # Flathub then fails with EXDEV. copying the installation into the writable layer first avoids it
+      - name: Make the baked-in Flatpak installation writable
+        run: |
+          cp -a /var/lib/flatpak /var/lib/flatpak.rw
+          rm -rf /var/lib/flatpak
+          mv /var/lib/flatpak.rw /var/lib/flatpak
+
+      # make sure the bundle targets the baseline CPU, same manifest edit upstream uses for the version
+      - name: Set the baseline CPU target in the manifest
+        run: |
+          python3 - <<'SCRIPT'
+          import json
+
+          path = "Meta/CMake/flatpak/org.ladybird.Ladybird.json"
+          with open(path) as file:
+              manifest = json.load(file)
+          ladybird = next(module for module in manifest["modules"] if module["name"] == "Ladybird")
+          ladybird["config-opts"].append("-DLADYBIRD_BASELINE_CPU_TARGET=ON")
+          with open(path, "w") as file:
+              json.dump(manifest, file, indent=4)
+          SCRIPT
+
+      - name: Build
+        uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+        with:
+          bundle: ${{ env.BUNDLE }}
+          manifest-path: Meta/CMake/flatpak/org.ladybird.Ladybird.json
+          arch: x86_64
+          cache: false
+          upload-artifact: false
+
+      - name: Upload
+        uses: actions/upload-artifact@v7
+        with:
+          name: pkg-flatpak
+          path: ${{ env.BUNDLE }}
+          if-no-files-found: error
+
+      # a build that produces a bundle is not the same as a bundle that installs;
+      # install it and start a shell inside the sandbox to catch a broken bundle early.
+      # the artifact is uploaded first, so a failed smoke test still leaves the bundle to inspect
+      - name: Smoke test the bundle
+        run: |
+          set -euo pipefail
+
+          ls -lh "$BUNDLE"
+
+          flatpak install --system --noninteractive -y "$BUNDLE"
+          flatpak info org.ladybird.Ladybird
+          flatpak run --command=sh org.ladybird.Ladybird -c 'test -x /app/bin/Ladybird'
+
+  PublishPrerelease:
+    name: Publish Flatpak prerelease
+    needs: [Source, BuildFlatpak]
+    if: ${{ !cancelled() && needs.BuildFlatpak.result == 'success' }}
+    runs-on: ubuntu-latest
+
+    # only this job needs write access; the build jobs stay read-only
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download the bundle
+        uses: actions/download-artifact@v8
+        with:
+          name: pkg-flatpak
+          path: out
+
+      # a distinct tag and --prerelease keep this out of the main packages-* release
+      - name: Publish prerelease
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DATE: ${{ needs.Source.outputs.date }}
+          SHORT_SHA: ${{ needs.Source.outputs.short_sha }}
+          SHA: ${{ needs.Source.outputs.sha }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+
+          files=(out/*.flatpak)
+          if [[ ${#files[@]} -eq 0 ]]; then
+            echo "error: no flatpak bundle found" >&2
+            exit 1
+          fi
+
+          TAG="flatpak-test-${DATE}-${SHORT_SHA}"
+
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Uploading to existing prerelease: $TAG"
+            gh release upload "$TAG" --repo "$GITHUB_REPOSITORY" --clobber "${files[@]}"
+          else
+            {
+              echo "**Ladybird Flatpak test build**"
+              echo ""
+              echo "- Upstream commit: [${SHORT_SHA}](https://github.com/LadybirdBrowser/ladybird/commit/${SHA})"
+              echo "- Built: ${DATE}"
+              echo "- Platform: Linux x86_64"
+              echo ""
+              echo '```bash'
+              echo "flatpak install --user ./ladybird-nightly-flatpak-x86_64-*.flatpak"
+              echo "flatpak run org.ladybird.Ladybird"
+              echo '```'
+              echo ""
+              echo "> Test prerelease. Not part of the main nightly package release."
+            } > /tmp/release-notes.md
+
+            gh release create "$TAG" \
+              --repo "$GITHUB_REPOSITORY" \
+              --prerelease \
+              --title "Flatpak test ${DATE} (${SHORT_SHA})" \
+              --notes-file /tmp/release-notes.md \
+              "${files[@]}"
+          fi
