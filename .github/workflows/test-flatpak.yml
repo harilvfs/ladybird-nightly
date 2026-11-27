@@ -142,9 +142,17 @@ jobs:
 
           ls -lh "$BUNDLE"
 
+          # read the command from the manifest instead of assuming the binary name
+          app_command="$(python3 -c 'import json; print(json.load(open("Meta/CMake/flatpak/org.ladybird.Ladybird.json"))["command"])')"
+          if [[ -z "$app_command" ]]; then
+            echo "error: the flatpak manifest does not set a command" >&2
+            exit 1
+          fi
+          echo "App command: ${app_command}"
+
           flatpak install --system --noninteractive -y "$BUNDLE"
           flatpak info org.ladybird.Ladybird
-          flatpak run --command=sh org.ladybird.Ladybird -c 'test -x /app/bin/Ladybird'
+          flatpak run --command=sh org.ladybird.Ladybird -c "test -x '/app/bin/${app_command}'"
 
   PublishPrerelease:
     name: Publish Flatpak prerelease

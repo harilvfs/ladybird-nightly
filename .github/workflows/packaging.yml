@@ -244,11 +244,21 @@ jobs:
           DESTDIR="$STAGE" cmake --install Build --strip --prefix /opt/ladybird --component ladybird_Runtime
           DESTDIR="$STAGE" cmake --install Build --strip --prefix /usr --component ladybird_SystemIntegration
 
-          if [[ ! -x "$STAGE/opt/ladybird/bin/Ladybird" ]]; then
-            echo "error: opt/ladybird/bin/Ladybird is missing, install layout:" >&2
+          # upstream renamed the browser binary from Ladybird to ladybird; accept either
+          BROWSER_BINARY=""
+          for candidate in ladybird Ladybird; do
+            if [[ -x "$STAGE/opt/ladybird/bin/$candidate" ]]; then
+              BROWSER_BINARY="$candidate"
+              break
+            fi
+          done
+
+          if [[ -z "$BROWSER_BINARY" ]]; then
+            echo "error: no browser binary found in opt/ladybird/bin, install layout:" >&2
             find "$STAGE" -maxdepth 3 | sort >&2
             exit 1
           fi
+          echo "Browser binary: ${BROWSER_BINARY}"
 
           # keep bundled libs private
           PRIVATE_LIB="$STAGE/opt/ladybird/lib/ladybird-nightly"
@@ -279,7 +289,7 @@ jobs:
             ls -l "$STAGE/usr/bin/ladybird"
           fi
           mkdir -p "$STAGE/usr/bin"
-          ln -sfn /opt/ladybird/bin/Ladybird "$STAGE/usr/bin/ladybird"
+          ln -sfn "/opt/ladybird/bin/${BROWSER_BINARY}" "$STAGE/usr/bin/ladybird"
 
           # show how the desktop entry launches the browser, to check it still resolves
           grep -rh '^Exec=' "$STAGE/usr/share/applications" 2>/dev/null || true
@@ -448,12 +458,27 @@ jobs:
           set(browser_root "${CPACK_TEMPORARY_DIRECTORY}/Browser")
           set(launcher "${browser_root}/usr/bin/ladybird")
 
-          if (NOT EXISTS "${launcher}")
+          # the launcher is a symlink to an absolute /opt path that does not exist in the staging tree,
+          # so EXISTS is false for it; check for the link itself as well
+          if (NOT EXISTS "${launcher}" AND NOT IS_SYMLINK "${launcher}")
             return()
           endif()
 
           file(REMOVE "${launcher}")
           file(WRITE "${launcher}" [=[#!/bin/sh
+          binary=""
+          for candidate in /opt/ladybird/bin/ladybird /opt/ladybird/bin/Ladybird; do
+              if [ -x "$candidate" ]; then
+                  binary="$candidate"
+                  break
+              fi
+          done
+
+          if [ -z "$binary" ]; then
+              echo "ladybird: browser binary not found" >&2
+              exit 1
+          fi
+
           bundle=""
           for candidate in /var/lib/ca-certificates/ca-bundle.pem /etc/ssl/ca-bundle.pem; do
               if [ -r "$candidate" ]; then
@@ -463,9 +488,9 @@ jobs:
           done
 
           if [ -n "$bundle" ]; then
-              exec /opt/ladybird/bin/Ladybird --certificate "$bundle" "$@"
+              exec "$binary" --certificate "$bundle" "$@"
           fi
-          exec /opt/ladybird/bin/Ladybird "$@"
+          exec "$binary" "$@"
           ]=])
           file(CHMOD "${launcher}" PERMISSIONS
               OWNER_READ OWNER_WRITE OWNER_EXECUTE
@@ -479,6 +504,7 @@ jobs:
             if (EXISTS "${path}")
               file(READ "${path}" contents)
               string(REPLACE "/opt/ladybird/bin/Ladybird" "/usr/bin/ladybird" contents "${contents}")
+              string(REPLACE "/opt/ladybird/bin/ladybird" "/usr/bin/ladybird" contents "${contents}")
               file(WRITE "${path}" "${contents}")
             endif()
           endforeach()
