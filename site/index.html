@@ -75,7 +75,7 @@
       <section class="section wrap" id="downloads">
         <div class="section-heading">
           <div><div class="eyebrow">PICK YOUR PLATFORM</div><h2>Ready when<br class="mobile-break" /> you are.</h2></div>
-          <p>Standalone builds are paused. Download the latest package for one of these tested distributions.</p>
+          <p>Standalone builds are paused. Download the latest package for one of these tested distributions, or use the Flatpak build on any Linux distribution.</p>
         </div>
         <div class="download-grid">
           <article class="download-card" data-distro="ubuntu">
@@ -103,17 +103,35 @@
             <a class="button button-primary" href="https://github.com/harilvfs/ladybird-nightly/releases/latest/download/ladybird-nightly-arch-x86_64.pkg.tar.zst">Download package <span aria-hidden="true">↓</span></a>
           </article>
         </div>
-        <div class="support-note"><span class="note-icon">i</span><p>Only the listed distributions are tested. Support for derivative distributions is not guaranteed. <a href="https://github.com/harilvfs/ladybird-nightly/issues">Report a problem</a> with your distro, version, and error.</p></div>
+        <article class="download-card download-card-wide" data-distro="flatpak">
+          <div class="card-top">
+            <svg class="distro-icon distro-icon-svg" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.6 20.4 7.3v9.4L12 21.4 3.6 16.7V7.3Z"/><path d="m3.9 7.4 8.1 4.6 8.1-4.6M12 12v9.4"/></svg>
+            <span class="card-tag">Any distribution</span>
+          </div>
+          <div class="download-card-wide-body">
+            <div class="download-card-wide-copy">
+              <h3>Flatpak <span>universal</span></h3>
+              <p>One bundle that runs on any Linux distribution with Flatpak. Needs the Flathub remote for the KDE runtime.</p>
+              <div class="card-command"><code id="flatpak-command">curl -fsSL https://raw.githubusercontent.com/harilvfs/ladybird-nightly/main/install.sh | bash -s -- --flatpak</code><button data-copy-target="flatpak-command" type="button" aria-label="Copy Flatpak install command">COPY</button></div>
+            </div>
+            <a class="button button-primary" href="https://github.com/harilvfs/ladybird-nightly/releases/latest/download/ladybird-nightly-flatpak-x86_64.flatpak">Download .flatpak <span aria-hidden="true">↓</span></a>
+          </div>
+        </article>
+        <div class="support-note"><span class="note-icon">i</span><p>Only the listed distributions are tested, and support for derivatives is not guaranteed. If a distro package fails to install or run, try the Flatpak build above. If the Flatpak also fails, <a href="https://github.com/harilvfs/ladybird-nightly/issues">report the problem</a> with your distro, version, and error.</p></div>
       </section>
 
       <section class="install-section" id="install">
         <div class="wrap install-layout">
-          <div><div class="eyebrow">QUICK START</div><h2>One command.<br /><em>Latest nightly.</em></h2><p>The installer supports Ubuntu 26.04, Fedora 44, openSUSE Tumbleweed, Arch Linux, and Arch-based distributions. On other distributions it stops because no package is available.</p><p>After installation, run <code>ladybird</code> or <code>lb</code>. The <code>lb</code> command is quiet and works well from app launchers.</p></div>
+          <div><div class="eyebrow">QUICK START</div><h2>One command.<br /><em>Latest nightly.</em></h2><p>The installer supports Ubuntu 26.04, Fedora 44, openSUSE Tumbleweed, Arch Linux, and Arch-based distributions. On other distributions it installs the Flatpak build instead.</p><p>After installation, run <code>ladybird</code> or <code>lb</code>. The <code>lb</code> command is quiet and works well from app launchers.</p></div>
           <div class="terminal"><div class="terminal-head"><span>TERMINAL</span></div><div class="terminal-command"><pre><code id="install-command">curl -fsSL https://raw.githubusercontent.com/harilvfs/ladybird-nightly/main/install.sh | bash</code></pre><button data-copy-target="install-command" type="button" aria-label="Copy install command">COPY</button></div><div class="terminal-foot">Then launch <code>ladybird</code> from your app launcher or terminal.</div></div>
         </div>
-        <details class="uninstall-box wrap">
+        <details class="install-details wrap">
+          <summary>Prefer the Flatpak?</summary>
+          <div class="terminal"><div class="terminal-head"><span>TERMINAL</span></div><div class="terminal-command"><pre><code id="flatpak-install-command">curl -fsSL https://raw.githubusercontent.com/harilvfs/ladybird-nightly/main/install.sh | bash -s -- --flatpak</code></pre><button data-copy-target="flatpak-install-command" type="button" aria-label="Copy Flatpak install command">COPY</button></div><div class="terminal-foot">Installs the Flatpak into your user installation. Requires Flatpak and the Flathub remote for the KDE runtime.</div></div>
+        </details>
+        <details class="install-details wrap">
           <summary>Uninstall Ladybird Nightly</summary>
-          <div class="terminal"><div class="terminal-head"><span>TERMINAL</span></div><div class="terminal-command"><pre><code id="uninstall-command">curl -fsSL https://raw.githubusercontent.com/harilvfs/ladybird-nightly/main/install.sh | bash -s -- --uninstall</code></pre><button data-copy-target="uninstall-command" type="button" aria-label="Copy uninstall command">COPY</button></div><div class="terminal-foot">Removes the installed distro package and older local launcher files.</div></div>
+          <div class="terminal"><div class="terminal-head"><span>TERMINAL</span></div><div class="terminal-command"><pre><code id="uninstall-command">curl -fsSL https://raw.githubusercontent.com/harilvfs/ladybird-nightly/main/install.sh | bash -s -- --uninstall</code></pre><button data-copy-target="uninstall-command" type="button" aria-label="Copy uninstall command">COPY</button></div><div class="terminal-foot">Removes the installed distro package or Flatpak and older local launcher files.</div></div>
         </details>
       </section>
 
@@ -125,6 +143,7 @@
         <div class="support-grid">
           <article class="support-card"><div class="support-card-heading"><div class="support-icons"><img src="assets/distro-icons/ubuntu.png" alt="" /><img src="assets/distro-icons/fedora.png" alt="" /><img src="assets/distro-icons/opensuse.png" alt="" /></div><h3>Ubuntu, Fedora and openSUSE</h3></div><p>These packages follow Ladybird upstream's build dependencies. The Ubuntu package may not work on Debian, which can ship older Qt and glibc versions.</p></article>
           <article class="support-card"><div class="support-card-heading"><div class="support-icons"><img src="assets/distro-icons/arch.png" alt="" /></div><h3>Arch Linux</h3></div><p>Upstream does not directly support Arch Linux. I maintain the Arch dependency mapping and packaging. Upstream changes may require updates, so compatibility can change.</p></article>
+          <article class="support-card support-card-wide"><div class="support-card-heading"><div class="support-icons"><svg class="support-icon-svg" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.6 20.4 7.3v9.4L12 21.4 3.6 16.7V7.3Z"/><path d="m3.9 7.4 8.1 4.6 8.1-4.6M12 12v9.4"/></svg></div><h3>Flatpak</h3></div><p>A universal bundle for any Linux distribution with Flatpak installed. It uses the KDE runtime from Flathub and runs in a sandbox, so it is the fallback when no native package exists for your distribution.</p></article>
         </div>
         <aside class="compat-warning" aria-label="Important"><div class="compat-warning-heading"><span class="note-icon" aria-hidden="true">i</span><strong>Important</strong></div><p><b>Derivative distributions:</b> Ubuntu-based, Fedora-based, openSUSE-based, and Arch-based distributions are not guaranteed to work. If you run into a problem, <a href="https://github.com/harilvfs/ladybird-nightly/issues">open an issue</a> with your distro, version, and error.</p></aside>
         <div class="known-issues">
@@ -132,7 +151,7 @@
           <article><h3>HTTPS certificate error 77</h3><p>On some distributions, including Arch and NixOS, certificate symlinks can point outside paths available to Ladybird's sandbox. HTTPS requests may fail with a CA certificate error. The openSUSE package avoids this by passing openSUSE's CA bundle with <code>--certificate</code>. See <a href="https://github.com/LadybirdBrowser/ladybird/issues/10241" target="_blank" rel="noreferrer">upstream issue 10241</a>.</p></article>
           <article><h3>Crashes on older CPUs</h3><p>Some older CPUs, including Intel Haswell and earlier, may hit an illegal instruction crash in WebContent. Related upstream reports: <a href="https://github.com/LadybirdBrowser/ladybird/issues/8989" target="_blank" rel="noreferrer">8989</a>, <a href="https://github.com/LadybirdBrowser/ladybird/issues/3836" target="_blank" rel="noreferrer">3836</a>, and <a href="https://github.com/LadybirdBrowser/ladybird/issues/10298" target="_blank" rel="noreferrer">10298</a>.</p></article>
         </div>
-        <aside class="build-note" aria-label="Note"><div class="build-note-heading"><span class="note-icon" aria-hidden="true">i</span><strong>Note</strong></div><p>Standalone tarballs are paused because they have had issues across Linux distributions, and maintaining separate fixes without upstream support for each distribution is not practical. Distro packages are built from upstream master daily at 02:00 UTC. Builds can fail when upstream code or dependencies change. If the latest release is several days old, the package build may be failing.</p></aside>
+        <aside class="build-note" aria-label="Note"><div class="build-note-heading"><span class="note-icon" aria-hidden="true">i</span><strong>Note</strong></div><p>Standalone tarballs are paused because they have had issues across Linux distributions, and maintaining separate fixes without upstream support for each distribution is not practical. Distro packages and the Flatpak are built from upstream master daily at 02:00 UTC. Builds can fail when upstream code or dependencies change. If the latest release is several days old, the package build may be failing.</p></aside>
       </section>
 
       <section class="about-section wrap" id="about">
@@ -155,6 +174,7 @@
             <a href="https://github.com/harilvfs/ladybird-nightly/releases/latest/download/ladybird-nightly-fedora-44-x86_64.rpm"><img class="footer-distro-icon" src="assets/distro-icons/fedora.png" alt="" />Fedora 44 <svg class="external-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-8.5 8.5"/><path d="M18 14v4.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10"/></svg></a>
             <a href="https://github.com/harilvfs/ladybird-nightly/releases/latest/download/ladybird-nightly-opensuse-tumbleweed-x86_64.rpm"><img class="footer-distro-icon" src="assets/distro-icons/opensuse.png" alt="" />openSUSE Tumbleweed <svg class="external-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-8.5 8.5"/><path d="M18 14v4.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10"/></svg></a>
             <a href="https://github.com/harilvfs/ladybird-nightly/releases/latest/download/ladybird-nightly-arch-x86_64.pkg.tar.zst"><img class="footer-distro-icon" src="assets/distro-icons/arch.png" alt="" />Arch Linux <svg class="external-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-8.5 8.5"/><path d="M18 14v4.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10"/></svg></a>
+            <a href="https://github.com/harilvfs/ladybird-nightly/releases/latest/download/ladybird-nightly-flatpak-x86_64.flatpak"><svg class="footer-distro-icon footer-icon-svg" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.6 20.4 7.3v9.4L12 21.4 3.6 16.7V7.3Z"/><path d="m3.9 7.4 8.1 4.6 8.1-4.6M12 12v9.4"/></svg>Flatpak <svg class="external-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-8.5 8.5"/><path d="M18 14v4.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10"/></svg></a>
           </div>
           <div class="footer-column">
             <h2>Project</h2>

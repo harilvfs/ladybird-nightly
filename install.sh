@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 # usage: curl -fsSL https://raw.githubusercontent.com/harilvfs/ladybird-nightly/main/install.sh | bash
+# flatpak:   curl -fsSL ... | bash -s -- --flatpak
 # uninstall: curl -fsSL ... | bash -s -- --uninstall
 
 set -euo pipefail
@@ -8,6 +9,7 @@ set -euo pipefail
 REPO="harilvfs/ladybird-nightly"
 DEFAULT_INSTALL_DIR="$HOME/.local/ladybird-nightly"
 UNINSTALL=0
+FORCE_FLATPAK=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -15,9 +17,14 @@ while [[ $# -gt 0 ]]; do
       UNINSTALL=1
       shift
       ;;
+    --flatpak)
+      FORCE_FLATPAK=1
+      shift
+      ;;
     --help | -h)
-      echo "Usage: install.sh [--uninstall]"
-      echo "  --uninstall   remove the distro package and local install files"
+      echo "Usage: install.sh [--flatpak] [--uninstall]"
+      echo "  --flatpak     install the Flatpak instead of the package for this distro"
+      echo "  --uninstall   remove the distro package, the Flatpak and local install files"
       exit 0
       ;;
     *)
@@ -75,6 +82,11 @@ if [[ "$UNINSTALL" -eq 1 ]]; then
     fi
   fi
 
+  # the installer puts the Flatpak in the user installation
+  if command -v flatpak &>/dev/null && flatpak info --user org.ladybird.Ladybird &>/dev/null; then
+    flatpak uninstall --user --noninteractive -y org.ladybird.Ladybird
+  fi
+
   rm -rf "$DEFAULT_INSTALL_DIR"
   rm -f "$HOME/.local/bin/ladybird" "$HOME/.local/bin/lb"
   rm -f "$HOME/.local/share/applications/ladybird-nightly.desktop"
@@ -99,43 +111,47 @@ ARCH="$(uname -m)"
   echo "error: only x86_64 is supported. Got: $ARCH" >&2
   exit 1
 }
-[[ -r /etc/os-release ]] || {
-  echo "error: cannot identify this distribution." >&2
-  exit 1
-}
 
-. /etc/os-release
-DISTRO_ID="${ID:-}"
-DISTRO_ID_LIKE="${ID_LIKE:-}"
-DISTRO_VERSION="${VERSION_ID:-}"
-ASSET_PREFIX=""
-PACKAGE_EXT=""
-PACKAGE_TYPE=""
+DISTRO_ID=""
+DISTRO_ID_LIKE=""
+DISTRO_VERSION=""
+if [[ -r /etc/os-release ]]; then
+  . /etc/os-release
+  DISTRO_ID="${ID:-}"
+  DISTRO_ID_LIKE="${ID_LIKE:-}"
+  DISTRO_VERSION="${VERSION_ID:-}"
+fi
+
+NATIVE_PREFIX=""
+NATIVE_EXT=""
+NATIVE_TYPE=""
 
 # asset names are ladybird-nightly-<distro>-x86_64-<date>-<sha>.<ext>, as named by the packages workflow
 if [[ "$DISTRO_ID" == "ubuntu" && "$DISTRO_VERSION" == "26.04" ]]; then
-  ASSET_PREFIX="ladybird-nightly-ubuntu-26.04-x86_64"
-  PACKAGE_EXT="deb"
-  PACKAGE_TYPE="deb"
+  NATIVE_PREFIX="ladybird-nightly-ubuntu-26.04-x86_64"
+  NATIVE_EXT="deb"
+  NATIVE_TYPE="deb"
 elif [[ "$DISTRO_ID" == "fedora" && "$DISTRO_VERSION" == "44" ]]; then
-  ASSET_PREFIX="ladybird-nightly-fedora-44-x86_64"
-  PACKAGE_EXT="rpm"
-  PACKAGE_TYPE="rpm"
+  NATIVE_PREFIX="ladybird-nightly-fedora-44-x86_64"
+  NATIVE_EXT="rpm"
+  NATIVE_TYPE="rpm"
 elif [[ "$DISTRO_ID" == "opensuse-tumbleweed" ]]; then
-  ASSET_PREFIX="ladybird-nightly-opensuse-tumbleweed-x86_64"
-  PACKAGE_EXT="rpm"
-  PACKAGE_TYPE="zypper"
+  NATIVE_PREFIX="ladybird-nightly-opensuse-tumbleweed-x86_64"
+  NATIVE_EXT="rpm"
+  NATIVE_TYPE="zypper"
 elif [[ " $DISTRO_ID $DISTRO_ID_LIKE " == *" arch "* ]]; then
-  ASSET_PREFIX="ladybird-nightly-arch-x86_64"
-  PACKAGE_EXT="pkg.tar.zst"
-  PACKAGE_TYPE="pacman"
-else
-  echo "error: no Ladybird nightly package is available for $DISTRO_ID ${DISTRO_VERSION}." >&2
-  echo "supported: Ubuntu 26.04, Fedora 44, openSUSE Tumbleweed, Arch Linux, and Arch-based distributions." >&2
-  exit 1
+  NATIVE_PREFIX="ladybird-nightly-arch-x86_64"
+  NATIVE_EXT="pkg.tar.zst"
+  NATIVE_TYPE="pacman"
 fi
 
-echo "Looking for a package built for $DISTRO_ID ${DISTRO_VERSION} ..."
+if [[ "$FORCE_FLATPAK" -eq 1 ]]; then
+  echo "Installing the Flatpak as requested."
+elif [[ -z "$NATIVE_PREFIX" ]]; then
+  echo "No native package for ${DISTRO_ID:-this distro} ${DISTRO_VERSION}, using the Flatpak instead."
+else
+  echo "Looking for a package built for $DISTRO_ID ${DISTRO_VERSION} ..."
+fi
 
 # read the release tags from the public atom feed. unlike api.github.com it has no
 # 60-requests-per-hour limit per IP, which can causes "403" errors from the API
@@ -154,30 +170,60 @@ TAGS=$(echo "$FEED" |
   exit 1
 }
 
-# newest first; use the first release that has a package for this distro
 PACKAGE_URL=""
-for tag in $TAGS; do
-  url="https://github.com/${REPO}/releases/download/${tag}/${ASSET_PREFIX}-${tag#packages-}.${PACKAGE_EXT}"
-  # one-byte range request: the signed download links do not accept HEAD requests
-  if curl -fsSL -r 0-0 -o /dev/null "$url" 2>/dev/null; then
-    PACKAGE_URL="$url"
-    break
+PACKAGE_TYPE=""
+
+# newest first; use the first release that has a package for this distro
+if [[ "$FORCE_FLATPAK" -eq 0 && -n "$NATIVE_PREFIX" ]]; then
+  for tag in $TAGS; do
+    url="https://github.com/${REPO}/releases/download/${tag}/${NATIVE_PREFIX}-${tag#packages-}.${NATIVE_EXT}"
+    # one-byte range request: the signed download links do not accept HEAD requests
+    if curl -fsSL -r 0-0 -o /dev/null "$url" 2>/dev/null; then
+      PACKAGE_URL="$url"
+      PACKAGE_TYPE="$NATIVE_TYPE"
+      break
+    fi
+  done
+  if [[ -z "$PACKAGE_URL" ]]; then
+    echo "No native package found in recent releases, trying the Flatpak."
   fi
-done
+fi
+
+# the Flatpak works on any distro, so it is also the fallback
+if [[ -z "$PACKAGE_URL" ]]; then
+  for tag in $TAGS; do
+    url="https://github.com/${REPO}/releases/download/${tag}/ladybird-nightly-flatpak-x86_64-${tag#packages-}.flatpak"
+    if curl -fsSL -r 0-0 -o /dev/null "$url" 2>/dev/null; then
+      PACKAGE_URL="$url"
+      PACKAGE_TYPE="flatpak"
+      break
+    fi
+  done
+fi
 
 [[ -n "$PACKAGE_URL" ]] || {
-  echo "error: no package for $DISTRO_ID ${DISTRO_VERSION} was found in recent releases." >&2
+  echo "error: no Ladybird nightly package was found in recent releases." >&2
+  echo "The build for your distro may have failed, try again later." >&2
   exit 1
 }
+
+if [[ "$PACKAGE_TYPE" == "flatpak" ]]; then
+  command -v flatpak &>/dev/null || {
+    echo "error: this install needs Flatpak, which is not installed." >&2
+    echo "Install it first: https://flatpak.org/setup/" >&2
+    exit 1
+  }
+fi
 
 PACKAGE_TMP=$(mktemp -d)
 trap 'rm -rf "$PACKAGE_TMP"' EXIT
 PACKAGE_FILE="$PACKAGE_TMP/$(basename "$PACKAGE_URL")"
-echo "Downloading distro package: $PACKAGE_URL"
+echo "Downloading: $PACKAGE_URL"
 curl -fSL --progress-bar -o "$PACKAGE_FILE" "$PACKAGE_URL"
 
+# the Flatpak goes into the user installation, so only the distro packages need root
 SUDO=()
-if [[ "$(id -u)" -ne 0 ]]; then
+if [[ "$PACKAGE_TYPE" != "flatpak" && "$(id -u)" -ne 0 ]]; then
   command -v sudo &>/dev/null || {
     echo "error: sudo is required to install a distro package." >&2
     exit 1
@@ -190,6 +236,15 @@ case "$PACKAGE_TYPE" in
   rpm) "${SUDO[@]}" dnf install -y "$PACKAGE_FILE" ;;
   zypper) "${SUDO[@]}" zypper --non-interactive install --allow-unsigned-rpm "$PACKAGE_FILE" ;;
   pacman) "${SUDO[@]}" pacman -U --noconfirm "$PACKAGE_FILE" ;;
+  flatpak)
+    # the bundle needs the KDE runtime from Flathub
+    flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+    flatpak install --user --noninteractive -y "$PACKAGE_FILE"
+    ;;
 esac
 
-echo "Ladybird nightly installed from the distro package. Run it with: ladybird"
+if [[ "$PACKAGE_TYPE" == "flatpak" ]]; then
+  echo "Ladybird nightly installed as a Flatpak. Run it with: flatpak run org.ladybird.Ladybird"
+else
+  echo "Ladybird nightly installed from the distro package. Run it with: ladybird"
+fi
