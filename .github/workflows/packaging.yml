@@ -2,7 +2,8 @@ name: Nightly Linux Packages
 
 run-name: Nightly Linux Packages from ${{ inputs.ref || 'master' }}
 
-# build ubuntu and fedora packages from upstream setup; maintain arch and opensuse packaging here
+# build ubuntu, fedora and flatpak packages from upstream setup; maintain arch and opensuse packaging here
+# every distro builds on its own: the release publishes whatever passed, and its description lists only that
 
 on:
   schedule:
@@ -565,9 +566,107 @@ jobs:
           path: out/*
           if-no-files-found: error
 
+  BuildFlatpak:
+    name: Flatpak, x86_64
+    needs: Source
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+
+    # same image and options as upstream's release workflow
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:kde-6.10
+      options: --privileged
+
+    env:
+      BUNDLE: ladybird-nightly-flatpak-x86_64-${{ needs.Source.outputs.date }}-${{ needs.Source.outputs.short_sha }}.flatpak
+
+    steps:
+      - name: Download the source
+        uses: actions/download-artifact@v8
+        with:
+          artifact-ids: ${{ needs.Source.outputs.artifact-id }}
+
+      - name: Unpack the source
+        run: |
+          tar -xf ./*-source.tar.xz --strip-components=1
+          rm ./*-source.tar.xz
+
+      # upstream's workaround: the image bakes the SDK into a read-only layer, and an SDK update from
+      # Flathub then fails with EXDEV. copying the installation into the writable layer first avoids it
+      - name: Make the baked-in Flatpak installation writable
+        run: |
+          cp -a /var/lib/flatpak /var/lib/flatpak.rw
+          rm -rf /var/lib/flatpak
+          mv /var/lib/flatpak.rw /var/lib/flatpak
+
+      # patch the manifest: force the baseline CPU target, and create /app/bin before gn copies into it
+      - name: Patch the flatpak manifest
+        run: |
+          python3 - <<'SCRIPT'
+          import json
+
+          path = "Meta/CMake/flatpak/org.ladybird.Ladybird.json"
+          with open(path) as file:
+              manifest = json.load(file)
+
+          ladybird = next(module for module in manifest["modules"] if module["name"] == "Ladybird")
+          ladybird["config-opts"].append("-DLADYBIRD_BASELINE_CPU_TARGET=ON")
+
+          # upstream's gn-whole-enchilada.sh runs `cp out/gn "$FLATPAK_DEST"/bin/` without
+          # creating the directory first, which fails with "Not a directory" when /app/bin is missing
+          gn = next((module for module in manifest["modules"] if module["name"] == "gn"), None)
+          if gn is not None:
+              commands = gn.setdefault("build-commands", [])
+              mkdir = 'mkdir -p "$FLATPAK_DEST/bin"'
+              if mkdir not in commands:
+                  commands.insert(0, mkdir)
+
+          with open(path, "w") as file:
+              json.dump(manifest, file, indent=4)
+          SCRIPT
+
+      - name: Build
+        uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+        with:
+          bundle: ${{ env.BUNDLE }}
+          manifest-path: Meta/CMake/flatpak/org.ladybird.Ladybird.json
+          arch: x86_64
+          cache: false
+          upload-artifact: false
+
+      - name: Upload
+        uses: actions/upload-artifact@v7
+        with:
+          name: pkg-flatpak
+          path: ${{ env.BUNDLE }}
+          if-no-files-found: error
+
+      # a build that produces a bundle is not the same as a bundle that installs;
+      # install it and start a shell inside the sandbox to catch a broken bundle early.
+      # the artifact is uploaded first, so a failed smoke test still leaves the bundle to inspect;
+      # the release job only publishes it when this whole job passed
+      - name: Smoke test the bundle
+        run: |
+          set -euo pipefail
+
+          ls -lh "$BUNDLE"
+
+          # read the command from the manifest instead of assuming the binary name
+          app_command="$(python3 -c 'import json; print(json.load(open("Meta/CMake/flatpak/org.ladybird.Ladybird.json"))["command"])')"
+          if [[ -z "$app_command" ]]; then
+            echo "error: the flatpak manifest does not set a command" >&2
+            exit 1
+          fi
+          echo "App command: ${app_command}"
+
+          flatpak install --system --noninteractive -y "$BUNDLE"
+          flatpak info org.ladybird.Ladybird
+          flatpak run --command=sh org.ladybird.Ladybird -c "test -x '/app/bin/${app_command}'"
+
   Release:
     name: Publish to GitHub Release
-    needs: [Source, Build, BuildArch, BuildOpenSUSE]
+    needs: [Source, Build, BuildArch, BuildOpenSUSE, BuildFlatpak]
+    # runs even when some builds failed, so one broken distro never blocks the others
     if: ${{ !cancelled() && needs.Source.result == 'success' }}
     runs-on: ubuntu-latest
 
@@ -579,7 +678,11 @@ jobs:
           path: out
           merge-multiple: true
 
-      # publish supported distro packages as regular releases
+      # the flatpak job uploads its bundle before the smoke test, so only keep it if the job passed
+      - name: Drop the Flatpak bundle if its job did not pass
+        if: ${{ needs.BuildFlatpak.result != 'success' }}
+        run: rm -f out/*.flatpak
+
       - name: Publish
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -590,16 +693,20 @@ jobs:
           set -euo pipefail
           shopt -s nullglob
 
-          cp out/ladybird-nightly-ubuntu-26.04-x86_64-*.deb out/ladybird-nightly-ubuntu-26.04-x86_64.deb
-          cp out/ladybird-nightly-fedora-44-x86_64-*.rpm out/ladybird-nightly-fedora-44-x86_64.rpm
-          cp out/ladybird-nightly-opensuse-tumbleweed-x86_64-*.rpm out/ladybird-nightly-opensuse-tumbleweed-x86_64.rpm
-          cp out/ladybird-nightly-arch-x86_64-*.pkg.tar.zst out/ladybird-nightly-arch-x86_64.pkg.tar.zst
-
           files=(out/*)
           if [[ ${#files[@]} -eq 0 ]]; then
             echo "error: no packages were built, nothing to publish" >&2
             exit 1
           fi
+
+          # also publish an undated copy of every package so the download link never changes
+          for f in "${files[@]}"; do
+            undated="${f/-${DATE}-${SHORT_SHA}/}"
+            if [[ "$undated" != "$f" ]]; then
+              cp "$f" "$undated"
+            fi
+          done
+          files=(out/*)
 
           TAG="packages-${DATE}-${SHORT_SHA}"
 
@@ -607,39 +714,99 @@ jobs:
             echo "Uploading to existing release: $TAG"
             gh release upload "$TAG" --repo "$GITHUB_REPOSITORY" --clobber "${files[@]}"
           else
-            echo "**Ladybird nightly Linux packages**" > /tmp/release-notes.md
-            echo "" >> /tmp/release-notes.md
-            echo "- Upstream commit: [${SHORT_SHA}](https://github.com/LadybirdBrowser/ladybird/commit/${SHA})" >> /tmp/release-notes.md
-            echo "- Built: ${DATE}" >> /tmp/release-notes.md
-            echo "- Platform: Linux x86_64" >> /tmp/release-notes.md
-            echo "" >> /tmp/release-notes.md
-            echo "**Ubuntu:**" >> /tmp/release-notes.md
-            echo '```bash' >> /tmp/release-notes.md
-            echo "sudo apt install ./ladybird-nightly-ubuntu-26.04-x86_64-*.deb" >> /tmp/release-notes.md
-            echo '```' >> /tmp/release-notes.md
-            echo "" >> /tmp/release-notes.md
-            echo "**Fedora:**" >> /tmp/release-notes.md
-            echo '```bash' >> /tmp/release-notes.md
-            echo "sudo dnf install ./ladybird-nightly-fedora-44-x86_64-*.rpm" >> /tmp/release-notes.md
-            echo '```' >> /tmp/release-notes.md
-            echo "" >> /tmp/release-notes.md
-            echo "**openSUSE Tumbleweed:**" >> /tmp/release-notes.md
-            echo '```bash' >> /tmp/release-notes.md
-            echo "sudo zypper install --allow-unsigned-rpm ./ladybird-nightly-opensuse-tumbleweed-x86_64-*.rpm" >> /tmp/release-notes.md
-            echo '```' >> /tmp/release-notes.md
-            echo "" >> /tmp/release-notes.md
-            echo "**Arch Linux (update your system first with pacman -Syu):**" >> /tmp/release-notes.md
-            echo '```bash' >> /tmp/release-notes.md
-            echo "sudo pacman -U ./ladybird-nightly-arch-x86_64-*.pkg.tar.zst" >> /tmp/release-notes.md
-            echo '```' >> /tmp/release-notes.md
-            echo "" >> /tmp/release-notes.md
-            echo "The Arch package installs the runtime under /opt/ladybird and provides the ladybird terminal command." >> /tmp/release-notes.md
-            echo "" >> /tmp/release-notes.md
-            echo "> Unofficial Ladybird nightly. Some sites may not work, crashes are possible, and security is not guaranteed. Use at your own risk." >> /tmp/release-notes.md
-
             gh release create "$TAG" \
               --repo "$GITHUB_REPOSITORY" \
               --title "Linux packages ${DATE} (${SHORT_SHA})" \
-              --notes-file /tmp/release-notes.md \
+              --notes "Publishing the packages for this build." \
               "${files[@]}"
           fi
+
+          # write the description from what the release really contains, so it only lists
+          # packages that exist (and says which ones are missing)
+          assets="$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name')"
+
+          has_ubuntu=0
+          has_fedora=0
+          has_opensuse=0
+          has_arch=0
+          has_flatpak=0
+          grep -q '^ladybird-nightly-ubuntu-26.04-x86_64-.*\.deb$' <<< "$assets" && has_ubuntu=1
+          grep -q '^ladybird-nightly-fedora-44-x86_64-.*\.rpm$' <<< "$assets" && has_fedora=1
+          grep -q '^ladybird-nightly-opensuse-tumbleweed-x86_64-.*\.rpm$' <<< "$assets" && has_opensuse=1
+          grep -q '^ladybird-nightly-arch-x86_64-.*\.pkg\.tar\.zst$' <<< "$assets" && has_arch=1
+          grep -q '^ladybird-nightly-flatpak-x86_64-.*\.flatpak$' <<< "$assets" && has_flatpak=1
+
+          missing=()
+          [[ "$has_ubuntu" -eq 1 ]] || missing+=("Ubuntu 26.04")
+          [[ "$has_fedora" -eq 1 ]] || missing+=("Fedora 44")
+          [[ "$has_opensuse" -eq 1 ]] || missing+=("openSUSE Tumbleweed")
+          [[ "$has_arch" -eq 1 ]] || missing+=("Arch Linux")
+          [[ "$has_flatpak" -eq 1 ]] || missing+=("Flatpak")
+
+          {
+            echo "**Ladybird nightly Linux packages**"
+            echo ""
+            echo "- Upstream commit: [${SHORT_SHA}](https://github.com/LadybirdBrowser/ladybird/commit/${SHA})"
+            echo "- Built: ${DATE}"
+            echo "- Platform: Linux x86_64"
+            echo ""
+            echo "**Easiest way to install (picks the right package for your distro):**"
+            echo '```bash'
+            echo "curl -fsSL https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/main/install.sh | bash"
+            echo '```'
+            echo ""
+            echo "**Or install by hand:**"
+            echo ""
+            if [[ "$has_ubuntu" -eq 1 ]]; then
+              echo "Ubuntu 26.04:"
+              echo '```bash'
+              echo "sudo apt install ./ladybird-nightly-ubuntu-26.04-x86_64-*.deb"
+              echo '```'
+              echo ""
+            fi
+            if [[ "$has_fedora" -eq 1 ]]; then
+              echo "Fedora 44:"
+              echo '```bash'
+              echo "sudo dnf install ./ladybird-nightly-fedora-44-x86_64-*.rpm"
+              echo '```'
+              echo ""
+            fi
+            if [[ "$has_opensuse" -eq 1 ]]; then
+              echo "openSUSE Tumbleweed:"
+              echo '```bash'
+              echo "sudo zypper install --allow-unsigned-rpm ./ladybird-nightly-opensuse-tumbleweed-x86_64-*.rpm"
+              echo '```'
+              echo ""
+            fi
+            if [[ "$has_arch" -eq 1 ]]; then
+              echo "Arch Linux (update your system first with pacman -Syu):"
+              echo '```bash'
+              echo "sudo pacman -U ./ladybird-nightly-arch-x86_64-*.pkg.tar.zst"
+              echo '```'
+              echo "The Arch package installs the runtime under /opt/ladybird and provides the ladybird terminal command."
+              echo ""
+            fi
+            if [[ "$has_flatpak" -eq 1 ]]; then
+              echo "Any other distro (Flatpak, needs the Flathub remote for the KDE runtime):"
+              echo '```bash'
+              echo "curl -fsSL https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/main/install.sh | bash -s -- --flatpak"
+              echo '```'
+              echo ""
+              echo "Or install the downloaded bundle by hand:"
+              echo '```bash'
+              echo "flatpak install --user ./ladybird-nightly-flatpak-x86_64-*.flatpak"
+              echo "flatpak run org.ladybird.Ladybird"
+              echo '```'
+              echo ""
+            fi
+            if [[ ${#missing[@]} -gt 0 ]]; then
+              printf -v missing_list '%s, ' "${missing[@]}"
+              echo "> The build failed for: ${missing_list%, }. I will check it soon, try the other packages for now."
+              echo ""
+            fi
+            echo "**Package not working?** If a distro package fails to install or run, use the Flatpak build instead. If the Flatpak also fails, [report the issue](https://github.com/${GITHUB_REPOSITORY}/issues) with your distro, version, and error."
+            echo ""
+            echo "> Unofficial Ladybird nightly. Some sites may not work, crashes are possible, and security is not guaranteed. Use at your own risk."
+          } > /tmp/release-notes.md
+
+          gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --notes-file /tmp/release-notes.md

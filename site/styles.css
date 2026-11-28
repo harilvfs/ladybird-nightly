@@ -132,6 +132,18 @@ a { color: inherit; }
 .download-card p { margin: 0 0 23px; color: var(--muted); font-size: 12px; }
 .download-card .button { align-self: flex-start; margin-top: auto; }
 .download-card code, .terminal code { color: var(--violet); font-family: var(--mono); }
+.distro-icon-svg { width: 38px; height: 38px; flex: none; color: var(--violet); }
+.download-card.download-card-wide { min-height: 0; margin-top: 14px; }
+.download-card-wide .card-top { min-height: 0; }
+.card-tag { color: var(--muted); font: 600 9px var(--sans); letter-spacing: .1em; text-transform: uppercase; }
+.download-card-wide-body { display: flex; align-items: flex-end; justify-content: space-between; gap: 26px; margin-top: 16px; }
+.download-card-wide-body h3 { margin: 0 0 8px; }
+.download-card-wide-body p { max-width: 520px; margin: 0; }
+.download-card-wide-body .button { flex: none; margin-top: 0; }
+.download-card-wide-copy { min-width: 0; }
+.card-command { display: flex; align-items: center; gap: 10px; margin-top: 13px; padding: 6px 7px 6px 11px; border: 1px solid var(--line); border-radius: 8px; background: #111017; }
+.card-command code { flex: 1; min-width: 0; color: var(--ink); font: 10px/1.6 var(--mono); overflow-wrap: anywhere; }
+.card-command button { flex: none; padding: 5px 8px; border: 1px solid #594d79; border-radius: 5px; background: transparent; color: var(--violet); font: 600 9px var(--sans); cursor: pointer; }
 .support-note { display: flex; gap: 12px; align-items: flex-start; margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--line); }
 .note-icon { flex: none; color: var(--blue-deep); font: 600 13px var(--sans); }
 .support-note p { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.65; }
@@ -140,9 +152,9 @@ a { color: inherit; }
 .install-layout { display: grid; grid-template-columns: .9fr 1.1fr; align-items: center; gap: 70px; }
 .install-section h2 { font-size: 51px; }
 .install-layout > div:first-child > p { max-width: 335px; margin-top: 22px; color: var(--muted); font-size: 13px; line-height: 1.7; }
-.uninstall-box { margin-top: 22px; }
-.uninstall-box summary { width: fit-content; padding: 12px 16px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink); font-size: 12px; font-weight: 600; cursor: pointer; }
-.uninstall-box[open] summary { margin-bottom: 14px; }
+.install-details { margin-top: 22px; }
+.install-details summary { width: fit-content; padding: 12px 16px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink); font-size: 12px; font-weight: 600; cursor: pointer; }
+.install-details[open] summary { margin-bottom: 14px; }
 .terminal { overflow: hidden; border: 1px solid #484458; border-radius: 14px; background: #111017; }
 .terminal-head { height: 42px; display: flex; align-items: center; gap: 12px; padding: 0 14px; border-bottom: 1px solid var(--line); color: var(--muted); font: 600 9px var(--sans); letter-spacing: .1em; }
 .terminal-command { display: flex; align-items: center; gap: 14px; padding: 12px 14px 12px 20px; }
@@ -160,6 +172,8 @@ a { color: inherit; }
 .support-card-heading { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
 .support-icons { display: flex; flex: none; align-items: center; gap: 5px; }
 .support-icons img { display: block; width: 30px; height: 30px; object-fit: contain; }
+.support-icon-svg { display: block; width: 30px; height: 30px; color: var(--violet); }
+.support-card-wide { grid-column: 1 / -1; }
 .support-card h3, .known-issues h3 { font-size: 16px; letter-spacing: -.02em; }
 .support-card h3 { margin: 0; }
 .known-issues h3 { margin: 0 0 10px; }
@@ -189,6 +203,7 @@ a { color: inherit; }
 .footer-column h2 { margin: 4px 0 14px; color: var(--violet); font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; }
 .footer-column a { display: inline-flex; align-items: center; gap: 5px; padding: 5px 0; color: var(--muted); font-size: 13px; text-decoration: none; }
 .footer-distro-icon { width: 18px; height: 18px; object-fit: contain; }
+.footer-icon-svg { color: var(--violet); }
 .footer-column .external-icon { width: 12px; height: 12px; }
 .footer-bottom { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px 24px; margin-top: 42px; padding-top: 20px; border-top: 1px solid var(--line); color: var(--muted); font-size: 11px; }
 #downloads, #install, #support, #about { scroll-margin-top: 92px; }
@@ -204,6 +219,8 @@ a { color: inherit; }
 :root[data-theme="light"] .terminal-head { background: #f5f3fa; }
 :root[data-theme="light"] .terminal-command pre { color: var(--ink); }
 :root[data-theme="light"] .terminal-command button { border-color: #c9c0e5; background: #f4f0ff; color: var(--indigo); }
+:root[data-theme="light"] .card-command { border-color: #c9c5d7; background: #fff; }
+:root[data-theme="light"] .card-command button { border-color: #c9c0e5; background: #f4f0ff; color: var(--indigo); }
 :root[data-theme="light"] .site-footer { background: #f0eff8; }
 :focus-visible { outline: 2px solid var(--violet); outline-offset: 3px; }
 
@@ -213,6 +230,8 @@ a { color: inherit; }
 }
 
 @media (max-width: 760px) {
+  html { -webkit-tap-highlight-color: transparent; }
+  a:focus:not(:focus-visible), button:focus:not(:focus-visible), summary:focus:not(:focus-visible) { outline: none; }
   .wrap { width: min(100% - 38px, 560px); }
   .topbar { height: 66px; padding-inline: 19px; }
   .desktop-nav { display: none; }
@@ -239,6 +258,7 @@ a { color: inherit; }
   .download-card { min-height: 218px; padding: 20px; }
   .download-card h3 { margin-top: 19px; }
   .download-card p { margin-bottom: 18px; }
+  .download-card-wide-body { flex-direction: column; align-items: flex-start; gap: 18px; }
   .support-note { margin-top: 18px; }
   .install-section { padding: 74px 0; }
   .install-layout { grid-template-columns: 1fr; gap: 34px; }
