@@ -1,0 +1,150 @@
+name: "Bug Report"
+description: "Report a problem with a Ladybird nightly package or the installer"
+title: "[Bug]: "
+labels: ["bug"]
+assignees:
+  - harilvfs
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: "Description"
+      description: "Provide a clear and concise description of the bug."
+      placeholder: "Describe the issue in detail..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: "Steps to Reproduce"
+      description: "List the steps to reproduce the issue."
+      placeholder: |
+        1. Downloaded the package from the latest release.
+        2. Installed it with ...
+        3. Ran ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected_behavior
+    attributes:
+      label: "Expected Behavior"
+      description: "What should happen instead?"
+      placeholder: "Describe the intended or correct behavior."
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual_behavior
+    attributes:
+      label: "Actual Behavior"
+      description: "What happens instead? Include the full error output."
+      placeholder: "Describe what actually happened."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: package
+    attributes:
+      label: "Package"
+      description: "Which package is affected?"
+      options:
+        - Ubuntu 26.04 (.deb)
+        - Fedora 44 (.rpm)
+        - openSUSE Tumbleweed (.rpm)
+        - Arch Linux (.pkg.tar.zst)
+        - Flatpak (.flatpak)
+        - Installer script
+    validations:
+      required: true
+
+  - type: dropdown
+    id: distro
+    attributes:
+      label: "Linux Distro"
+      description: "Which distribution are you running?"
+      options:
+        - Ubuntu
+        - Fedora
+        - openSUSE Tumbleweed
+        - Arch Linux or derivative
+        - Other (please specify below)
+    validations:
+      required: true
+
+  - type: input
+    id: other_distro
+    attributes:
+      label: "Other Distro (if not listed)"
+      description: "If you selected 'Other', specify your distro."
+      placeholder: "Enter distro name"
+    validations:
+      required: false
+
+  - type: input
+    id: distro_version
+    attributes:
+      label: "Distro Version"
+      description: "Paste the PRETTY_NAME line from /etc/os-release."
+      placeholder: "e.g. Ubuntu 26.04 LTS"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install_method
+    attributes:
+      label: "Install Method"
+      description: "How did you install it?"
+      options:
+        - install.sh
+        - install.sh --flatpak
+        - Manual package install
+        - Manual Flatpak install
+    validations:
+      required: true
+
+  - type: input
+    id: build
+    attributes:
+      label: "Nightly Build"
+      description: "Release tag or date of the package you installed."
+      placeholder: "e.g. packages-20261128-abc1234"
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: "Error Output / Logs"
+      description: "Paste the complete error message or command output."
+      placeholder: "Paste the output here."
+    validations:
+      required: false
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: "Screenshots (if applicable)"
+      description: "Attach screenshots if they help explain the problem."
+      placeholder: "Drag and drop screenshots here."
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional_info
+    attributes:
+      label: "Additional Information"
+      description: "Include any other relevant details or recent changes."
+      placeholder: "Paste error messages or additional notes here."
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: "Issue Scope"
+      description: "Browser engine bugs and website compatibility issues belong in the upstream Ladybird project, not here."
+      options:
+        - label: I am reporting a packaging, install, or distribution problem.
+          required: true

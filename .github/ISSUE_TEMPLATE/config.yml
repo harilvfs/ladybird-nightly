@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Ladybird upstream issues
+    url: https://github.com/LadybirdBrowser/ladybird/issues
+    about: Report browser engine bugs and website compatibility issues here.
+  - name: Ladybird Nightly site
+    url: https://harilvfs.github.io/ladybird-nightly/
+    about: Downloads, install instructions, and platform notes.
