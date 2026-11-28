@@ -1,0 +1,72 @@
+name: "Feature Request"
+description: "Suggest an idea to improve the nightly packages or the site"
+title: "[Feature]: "
+labels: ["feature"]
+assignees:
+  - harilvfs
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for taking the time to submit a feature request! Please note that submitting a request does not guarantee implementation.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: "Area"
+      description: "Which part of this project is this feature for?"
+      options:
+        - Packaging or distro support
+        - Installer script
+        - Website
+        - CI / workflow
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: use_case
+    attributes:
+      label: "Use Case"
+      description: "How would this feature benefit you or other users?"
+      placeholder: "Describe real-world scenarios where this feature would be helpful."
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed_solution
+    attributes:
+      label: "Proposed Solution"
+      description: "If you have a specific solution in mind, describe it here."
+      placeholder: "Explain how you think the feature should be implemented (optional)."
+    validations:
+      required: false
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: "Alternatives"
+      description: "Have you considered any alternative solutions or workarounds?"
+      placeholder: "Describe other possible approaches to solve this problem."
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional_info
+    attributes:
+      label: "Additional Information"
+      description: "Include any relevant details, references, or screenshots."
+      placeholder: "Provide any extra information, such as links to similar features in other projects."
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: "Support or Contribution"
+      description: |
+
+        You are welcome to submit your feature request! While most enhancements are community-driven, you can also support or contribute to accelerate implementation.
+      options:
+        - label: "[I am willing to contribute or support this feature](https://github.com/harilvfs/ladybird-nightly)"
+          required: false
